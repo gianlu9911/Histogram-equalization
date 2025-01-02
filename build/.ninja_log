@@ -1,0 +1,6 @@
+# ninja log v5
+1	876	1735816769282746724	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	a9931c63847c74e7
+876	910	1735816769312747306	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	a0376339a850b8
+910	1107	1735816769512751166	histogram_cuda	e6323c18e2010197
+1	1220	1735817438774709105	CMakeFiles/histogram_sequential.dir/sequential_main.cpp.o	cdc7a9c8699aad15
+1220	1482	1735817439034714126	histogram_sequential	8f50211a01466fb9

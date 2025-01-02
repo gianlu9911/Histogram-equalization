@@ -1,48 +1,35 @@
-#include "opencv2/opencv.hpp"
-#include <iostream>
+#include "Utility.h"
 
-using namespace std;
-using namespace cv;
+int main() {
+    std::string inputPath = "../images/img1.bmp";
 
-int main()
-{
-    // Set the image path directly
-    String imagePath = "../images/img1.bmp";  // Change the path as needed
-
-    // Read the image in grayscale
-    Mat src = imread(imagePath, IMREAD_GRAYSCALE);
-
-    if (src.empty()) {
-        cerr << "Error: Unable to open the image." << endl;
-        return EXIT_FAILURE;
+    cv::Mat img = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
+    if (img.empty()) {
+        std::cerr << "Error: Could not load image at " << inputPath << std::endl;
+        return -1;
     }
 
-    // Calculate histogram for grayscale image
-    int histSize = 256;
-    const float range[] = { 0, 256 }; 
-    const float* histRange[] = { range };
+    std::vector<std::pair<int, int>> sizes = {
+        {128, 128}, {256, 256}, {512, 512}, {1024, 1024}, {2048, 2048}
+    };
 
-    Mat hist;
-    calcHist(&src, 1, 0, Mat(), hist, 1, &histSize, histRange);
+    std::cout << "Original Image Size: " << img.cols << "x" << img.rows << std::endl;
 
-    // Normalize the histogram
-    int hist_w = 512, hist_h = 400;
-    int bin_w = cvRound((double)hist_w / histSize);
-    Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(0));
+    for (const auto& size : sizes) {
+        // Resize the image
+        cv::Mat resizedImg;
+        cv::resize(img, resizedImg, cv::Size(size.first, size.second));
 
-    normalize(hist, hist, 0, hist_h, NORM_MINMAX);
+        auto start = std::chrono::high_resolution_clock::now();
+        equalizeHistogram(resizedImg.data, resizedImg.cols, resizedImg.rows);
+        auto end = std::chrono::high_resolution_clock::now();
 
-    // Plot the histogram
-    for (int i = 1; i < histSize; i++) {
-        line(histImage, 
-             Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
-             Point(bin_w * i, hist_h - cvRound(hist.at<float>(i))),
-             Scalar(255), 2, 8, 0);
+        double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+        std::cout << "Processed size " << size.first << "x" << size.second << " in " << elapsed << " ms" << std::endl;
+
+        std::string outputPath = "../outputs/resized_" + std::to_string(size.first) + "x" + std::to_string(size.second) + ".bmp";
+        cv::imwrite(outputPath, resizedImg);
     }
 
-    // Show the image and its histogram
-    imshow("Source Image", src);
-    imshow("Histogram", histImage);
-    waitKey();
-    return EXIT_SUCCESS;
+    return 0;
 }

@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+#include "UtilityCuda.cu"
+>>>>>>> fa413aa0b83c7d85b8316d3827d75df66d921c36
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <cuda_runtime.h>

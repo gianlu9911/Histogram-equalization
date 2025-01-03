@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <iostream>
 #include <cuda_runtime.h>
 #include <vector>

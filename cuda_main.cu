@@ -1,4 +1,4 @@
-#include "Utility Cuda.cu"
+#include "UtilityCuda.cu"
 #include <opencv2/opencv.hpp>
 
 int main() {

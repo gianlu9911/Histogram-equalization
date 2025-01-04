@@ -77,7 +77,6 @@ int main() {
                   << ", Equalization Time (ms): " << equalization_time 
                   << ", Total Time (ms): " << total_time << std::endl;
 
-        // Save results 
         csvFile << size << "x" << size << ","
                 << histogram_time << ","
                 << cdf_time << ","

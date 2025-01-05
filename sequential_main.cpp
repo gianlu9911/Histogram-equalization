@@ -69,10 +69,7 @@ int main2() {
 
 
 int main() {
-    // Path to the input image
-    std::string imagePath = "../images/img1.bmp"; // Replace with your image path
-
-    // Perform histogram equalization and log execution time for different sizes
+    std::string imagePath = "../images/img1.bmp"; 
     histogramEqualizationOPENCV(imagePath);
 
     return 0;

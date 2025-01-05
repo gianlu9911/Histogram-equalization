@@ -1,0 +1,21 @@
+- first of all do:
+     cd so that you go in /home/sangi/my_programs/parallel_computing/hitogram_equalization
+
+- now:
+     ncu -o ./profiling/histogram_cuda_profile build/histogram_cuda
+    
+    this should create a profiling file inside the profiling folder.
+
+- now:
+    ncu-ui ./profiling/histogram_cuda_profile.ncu-rep
+
+    this should open a gui making readable the file
+
+
+for any reference see: 
+    https://peterchng.com/blog/2024/03/02/profiling-cuda-programs-on-wsl-2/
+
+
+
+    REMEMBER: when the gui opens, make sure to check all the suggest! 
+    you can do it opening the box called Pages!

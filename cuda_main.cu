@@ -1,7 +1,7 @@
 #include "UtilityCuda.cu"
 
 int main() {
-    std::string inputPath = "../images/img1.bmp";
+    std::string inputPath = "images/img1.bmp";
 
     cv::Mat img = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
     if (img.empty()) {
@@ -11,14 +11,17 @@ int main() {
 
     std::string csvPath = "../execution_times.csv";
 
-    std::ofstream csvFile(csvPath, std::ios::out);
+    // Open the CSV file in append mode
+    std::ofstream csvFile(csvPath, std::ios::out | std::ios::app);
 
-    // If empty write the head of the csv
+    // Write the header if the file is empty
     if (csvFile.tellp() == 0) {
         csvFile << "Image Size,Histogram Time (ms),CDF Time (ms),Equalization Time (ms),Total Time (ms),Threads,Blocks\n";
     }
 
     std::vector<int> sizes = {128, 256, 512, 1024, 2048}; // size test
+    std::vector<int> thread_configs = {128, 256, 512,1024};   // threads configurations
+    std::vector<int> block_configs = {32, 64, 128,256};      // block configurations
 
     for (int size : sizes) {
         cv::Mat resized_img;
@@ -42,51 +45,55 @@ int main() {
         CUDA_CHECK(cudaEventCreate(&start));
         CUDA_CHECK(cudaEventCreate(&stop));
 
-        int threads = 256;
-        int blocks_histogram = (width * height + threads - 1) / threads;
+        for (int threads : thread_configs) {
+            for (int blocks : block_configs) {
+                int blocks_histogram = (width * height + threads - 1) / threads;
 
-        // Histogram computation
-        CUDA_CHECK(cudaEventRecord(start));
-        compute_histogram<<<blocks_histogram, threads>>>(d_input, d_hist, width, height);
-        CUDA_CHECK(cudaEventRecord(stop));
-        CUDA_CHECK(cudaEventSynchronize(stop));
-        CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
-        float histogram_time = milliseconds;
+                // Histogram computation
+                CUDA_CHECK(cudaEventRecord(start));
+                compute_histogram<<<blocks_histogram, threads>>>(d_input, d_hist, width, height);
+                CUDA_CHECK(cudaEventRecord(stop));
+                CUDA_CHECK(cudaEventSynchronize(stop));
+                CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+                float histogram_time = milliseconds;
 
-        // CDF computation
-        CUDA_CHECK(cudaEventRecord(start));
-        compute_cdf<<<1, 256>>>(d_hist, d_cdf, width * height);
-        CUDA_CHECK(cudaEventRecord(stop));
-        CUDA_CHECK(cudaEventSynchronize(stop));
-        CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
-        float cdf_time = milliseconds;
+                // CDF computation
+                CUDA_CHECK(cudaEventRecord(start));
+                compute_cdf<<<1, 256>>>(d_hist, d_cdf, width * height);
+                CUDA_CHECK(cudaEventRecord(stop));
+                CUDA_CHECK(cudaEventSynchronize(stop));
+                CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+                float cdf_time = milliseconds;
 
-        // Equalize image
-        CUDA_CHECK(cudaEventRecord(start));
-        equalize_image<<<blocks_histogram, threads>>>(d_output, d_input, d_cdf, width, height);
-        CUDA_CHECK(cudaEventRecord(stop));
-        CUDA_CHECK(cudaEventSynchronize(stop));
-        CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
-        float equalization_time = milliseconds;
+                // Equalize image
+                CUDA_CHECK(cudaEventRecord(start));
+                equalize_image<<<blocks_histogram, threads>>>(d_output, d_input, d_cdf, width, height);
+                CUDA_CHECK(cudaEventRecord(stop));
+                CUDA_CHECK(cudaEventSynchronize(stop));
+                CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+                float equalization_time = milliseconds;
 
-        float total_time = histogram_time + cdf_time + equalization_time;
+                float total_time = histogram_time + cdf_time + equalization_time;
 
-        std::cout << "Image Size: " << size << "x" << size 
-                  << ", Histogram Time (ms): " << histogram_time 
-                  << ", CDF Time (ms): " << cdf_time 
-                  << ", Equalization Time (ms): " << equalization_time 
-                  << ", Total Time (ms): " << total_time << std::endl;
+                std::cout << "Image Size: " << size 
+                          << ", Histogram Time (ms): " << histogram_time 
+                          << ", CDF Time (ms): " << cdf_time 
+                          << ", Equalization Time (ms): " << equalization_time 
+                          << ", Total Time (ms): " << total_time 
+                          << ", Threads: " << threads
+                          << ", Blocks: " << blocks << std::endl;
 
-        // Save results 
-        csvFile << size << "x" << size << ","
-                << histogram_time << ","
-                << cdf_time << ","
-                << equalization_time << ","
-                << total_time << ","
-                << threads << ","
-                << blocks_histogram << "\n";
+                // Save results
+                csvFile << size << ","
+                        << histogram_time << ","
+                        << cdf_time << ","
+                        << equalization_time << ","
+                        << total_time << ","
+                        << threads << ","
+                        << blocks << "\n";
+            }
+        }
 
-        
         CUDA_CHECK(cudaFree(d_input));
         CUDA_CHECK(cudaFree(d_output));
         CUDA_CHECK(cudaFree(d_hist));
@@ -96,7 +103,7 @@ int main() {
         CUDA_CHECK(cudaEventDestroy(stop));
     }
 
-    csvFile.close(); 
+    csvFile.close();
 
     std::cout << "Execution times saved to " << csvPath << std::endl;
     return 0;

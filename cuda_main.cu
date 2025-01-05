@@ -108,3 +108,4 @@ int main() {
     std::cout << "Execution times saved to " << csvPath << std::endl;
     return 0;
 }
+

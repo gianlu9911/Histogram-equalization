@@ -1,8 +1,8 @@
 #include "Utility.h"
 
-int main() {
+int main2() {
     std::string inputPath = "../images/img1.bmp";
-    std::string csvPath = "../execution_times.csv";
+    std::string csvPath = "../execution_times_sequential.csv";
 
     cv::Mat img = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
     if (img.empty()) {
@@ -66,3 +66,15 @@ int main() {
     csvFile.close();
     return 0;
 }
+
+
+int main() {
+    // Path to the input image
+    std::string imagePath = "../images/img1.bmp"; // Replace with your image path
+
+    // Perform histogram equalization and log execution time for different sizes
+    histogramEqualizationOPENCV(imagePath);
+
+    return 0;
+}
+

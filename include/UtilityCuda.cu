@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <cuda_runtime.h>
@@ -144,4 +143,3 @@ __global__ void equalize_image(unsigned char* d_output, const unsigned char* d_i
         d_output[idx] = cdf_shared[d_input[idx]];
     }
 }
->>>>>>> 58969689b982464cc4860fabf20f6316494c3c08

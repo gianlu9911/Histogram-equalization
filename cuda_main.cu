@@ -45,7 +45,7 @@ int main() {
         CUDA_CHECK(cudaEventCreate(&start));
         CUDA_CHECK(cudaEventCreate(&stop));
 
-        float total_execution_time = 0.0f;  // To track the total execution time for all operations
+        float total_execution_time = 0.0f; 
 
         for (int threads : thread_configs) {
             for (int blocks : block_configs) {
@@ -79,7 +79,6 @@ int main() {
                 CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
                 equalization_time = milliseconds;
 
-                // Calculate total time for this configuration
                 float total_time = histogram_time + cdf_time + equalization_time;
                 total_execution_time += total_time;
 
@@ -91,7 +90,7 @@ int main() {
                           << ", Threads: " << threads
                           << ", Blocks: " << blocks << std::endl;
 
-                // Save results for each thread/block configuration
+                // Save csv
                 csvFile << size << ","
                         << histogram_time << ","
                         << cdf_time << ","
@@ -101,8 +100,6 @@ int main() {
                         << blocks << "\n";
             }
         }
-
-
 
         CUDA_CHECK(cudaFree(d_input));
         CUDA_CHECK(cudaFree(d_output));

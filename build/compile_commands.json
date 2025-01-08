@@ -1,14 +1,14 @@
 [
 {
-  "directory": "/home/sangi/my_programs/parallel_computing/hitogram_equalization/build",
-  "command": "/usr/bin/g++ -I/home/sangi/my_programs/parallel_computing/hitogram_equalization/include -isystem /usr/local/include/opencv4 -g -std=gnu++17 -fPIE -o CMakeFiles/histogram_sequential.dir/sequential_main.cpp.o -c /home/sangi/my_programs/parallel_computing/hitogram_equalization/sequential_main.cpp",
-  "file": "/home/sangi/my_programs/parallel_computing/hitogram_equalization/sequential_main.cpp",
+  "directory": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build",
+  "command": "/usr/bin/g++-12 -I/home/sangi/my_programs/parallel_computing/Histogram-equalization/include -isystem /usr/local/include/opencv4 -g -std=gnu++17 -fPIE -o CMakeFiles/histogram_sequential.dir/sequential_main.cpp.o -c /home/sangi/my_programs/parallel_computing/Histogram-equalization/sequential_main.cpp",
+  "file": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/sequential_main.cpp",
   "output": "CMakeFiles/histogram_sequential.dir/sequential_main.cpp.o"
 },
 {
-  "directory": "/home/sangi/my_programs/parallel_computing/hitogram_equalization/build",
-  "command": "/usr/bin/nvcc -forward-unknown-to-host-compiler -I/home/sangi/my_programs/parallel_computing/hitogram_equalization/include -isystem /usr/local/include/opencv4 -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -Xcompiler=-fPIE -x cu -rdc=true -c /home/sangi/my_programs/parallel_computing/hitogram_equalization/cuda_main.cu -o CMakeFiles/histogram_cuda.dir/cuda_main.cu.o",
-  "file": "/home/sangi/my_programs/parallel_computing/hitogram_equalization/cuda_main.cu",
+  "directory": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build",
+  "command": "/usr/bin/nvcc -forward-unknown-to-host-compiler -I/home/sangi/my_programs/parallel_computing/Histogram-equalization/include -isystem /usr/local/include/opencv4 -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -Xcompiler=-fPIE -x cu -rdc=true -c /home/sangi/my_programs/parallel_computing/Histogram-equalization/cuda_main.cu -o CMakeFiles/histogram_cuda.dir/cuda_main.cu.o",
+  "file": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/cuda_main.cu",
   "output": "CMakeFiles/histogram_cuda.dir/cuda_main.cu.o"
 }
 ]

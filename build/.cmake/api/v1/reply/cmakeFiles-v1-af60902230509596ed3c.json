@@ -824,8 +824,8 @@
 	"kind" : "cmakeFiles",
 	"paths" : 
 	{
-		"build" : "/home/sangi/my_programs/parallel_computing/hitogram_equalization/build",
-		"source" : "/home/sangi/my_programs/parallel_computing/hitogram_equalization"
+		"build" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build",
+		"source" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization"
 	},
 	"version" : 
 	{

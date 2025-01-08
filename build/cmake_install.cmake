@@ -1,4 +1,4 @@
-# Install script for directory: /home/sangi/my_programs/parallel_computing/hitogram_equalization
+# Install script for directory: /home/sangi/my_programs/parallel_computing/Histogram-equalization
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/sangi/my_programs/parallel_computing/hitogram_equalization/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

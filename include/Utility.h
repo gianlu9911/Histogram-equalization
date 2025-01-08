@@ -4,39 +4,33 @@
 #include <chrono>
 #include <fstream>
 
-// Function to save execution times and image information to a CSV file
-void saveExecutionTimesToCSV(const std::vector<std::tuple<int, int, int, std::string, double>>& times, const std::string& filename) {
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Error: Could not open CSV file for writing." << std::endl;
-        return;
+void saveExecutionTimesToCSV(const std::vector<std::tuple<int, int, int, std::string, double>>& executionTimes, const std::string& filename) {
+    std::ofstream file(filename, std::ios::app); // Open in append mode
+
+    // Write header if the file is empty
+    if (file.tellp() == 0) {
+        file << "Width,Height,Channels,Method,ExecutionTime(ms)" << std::endl;
     }
 
-    file << "Width,Height,Channels,Method,ExecutionTime(ms)\n";
-
-    for (const auto& entry : times) {
-        file << std::get<0>(entry) << ","
-             << std::get<1>(entry) << ","
-             << std::get<2>(entry) << ","
-             << std::get<3>(entry) << ","
-             << std::get<4>(entry) << "\n";
+    // Write execution times data to CSV
+    for (const auto& execTime : executionTimes) {
+        file << std::get<0>(execTime) << ","
+             << std::get<1>(execTime) << ","
+             << std::get<2>(execTime) << ","
+             << std::get<3>(execTime) << ","
+             << std::get<4>(execTime) << std::endl;
     }
 
     file.close();
 }
 
 // Function to equalize histogram for grayscale images using OpenCV
-double equalizeHistogramGrayOpenCV(const std::string& inputPath, const std::string& outputPath, bool printTime = true) {
+double equalizeHistogramGrayOpenCV(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    cv::Mat img = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
-    if (img.empty()) {
-        std::cerr << "Error: Could not load image at " << inputPath << std::endl;
-        return 0.0;
-    }
     cv::Mat equalizedImg;
-    cv::equalizeHist(img, equalizedImg);
-    cv::imwrite(outputPath, equalizedImg);
+    cv::equalizeHist(inputImage, equalizedImg);
+    outputImage = equalizedImg;
 
     auto end = std::chrono::high_resolution_clock::now();
     double executionTime = std::chrono::duration<double, std::milli>(end - start).count();
@@ -48,22 +42,17 @@ double equalizeHistogramGrayOpenCV(const std::string& inputPath, const std::stri
 }
 
 // Function to equalize histogram for colored images using OpenCV
-double equalizeHistogramColorOpenCV(const std::string& inputPath, const std::string& outputPath, bool printTime = true) {
+double equalizeHistogramColorOpenCV(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    cv::Mat img = cv::imread(inputPath);
-    if (img.empty()) {
-        std::cerr << "Error: Could not load image at " << inputPath << std::endl;
-        return 0.0;
-    }
     std::vector<cv::Mat> channels;
-    cv::split(img, channels);
+    cv::split(inputImage, channels);
     for (auto& channel : channels) {
         cv::equalizeHist(channel, channel);
     }
     cv::Mat equalizedImg;
     cv::merge(channels, equalizedImg);
-    cv::imwrite(outputPath, equalizedImg);
+    outputImage = equalizedImg;
 
     auto end = std::chrono::high_resolution_clock::now();
     double executionTime = std::chrono::duration<double, std::milli>(end - start).count();
@@ -74,14 +63,9 @@ double equalizeHistogramColorOpenCV(const std::string& inputPath, const std::str
     return executionTime;
 }
 
-// Function to equalize the histogram for grayscale images without OpenCV
+// Function to equalize the histogram for grayscale images manually
 double equalizeHistogramGrayManual(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
     auto start = std::chrono::high_resolution_clock::now();
-
-    if (inputImage.channels() != 1) {
-        std::cerr << "Error: Input image must be grayscale!" << std::endl;
-        return 0.0;
-    }
 
     int hist[256] = {0};
     for (int y = 0; y < inputImage.rows; ++y) {
@@ -119,14 +103,9 @@ double equalizeHistogramGrayManual(const cv::Mat& inputImage, cv::Mat& outputIma
     return executionTime;
 }
 
-// Function to equalize the histogram for color images without OpenCV
+// Function to equalize the histogram for color images manually
 double equalizeHistogramColorManual(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
     auto start = std::chrono::high_resolution_clock::now();
-
-    if (inputImage.channels() != 3) {
-        std::cerr << "Error: Input image must be color (3 channels)!" << std::endl;
-        return 0.0;
-    }
 
     std::vector<cv::Mat> channels;
     cv::split(inputImage, channels);

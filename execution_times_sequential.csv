@@ -1,5 +1,21 @@
 Width,Height,Channels,Method,ExecutionTime(ms)
-512,512,1,OpenCV Grayscale,4.21673
-512,512,1,Manual Grayscale,6.25999
-512,512,3,OpenCV Color,6.94749
-512,512,3,Manual Color,6.95055
+128,128,1,OpenCV Grayscale,0.023735
+128,128,1,Manual Grayscale,0.159508
+128,128,3,OpenCV Color,0.133766
+128,128,3,Manual Color,0.643083
+256,256,1,OpenCV Grayscale,0.050222
+256,256,1,Manual Grayscale,0.386516
+256,256,3,OpenCV Color,0.318442
+256,256,3,Manual Color,1.24272
+512,512,1,OpenCV Grayscale,0.848934
+512,512,1,Manual Grayscale,2.08147
+512,512,3,OpenCV Color,1.28373
+512,512,3,Manual Color,6.28409
+1024,1024,1,OpenCV Grayscale,1.40608
+1024,1024,1,Manual Grayscale,6.44513
+1024,1024,3,OpenCV Color,4.69741
+1024,1024,3,Manual Color,16.8756
+2048,2048,1,OpenCV Grayscale,2.28227
+2048,2048,1,Manual Grayscale,20.6672
+2048,2048,3,OpenCV Color,11.1507
+2048,2048,3,Manual Color,61.2326

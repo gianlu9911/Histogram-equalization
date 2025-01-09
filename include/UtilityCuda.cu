@@ -4,6 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 
+#define BLOCK_SIZE 16  // Define BLOCK_SIZE with an appropriate value
+
 #define CUDA_CHECK(call) \
 { \
     const cudaError_t error = call; \
@@ -15,27 +17,51 @@
     } \
 }
 
-// CUDA kernel for histogram equalization of RGB channels
-__global__ void equalizeRGBImage(const unsigned char* d_image, unsigned char* d_output, int width, int height, const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b)
+__global__ void equalizeRGBImage(const unsigned char* d_image, unsigned char* d_output, int width, int height,
+    const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b,
+    int tile_width, int tile_height)
 {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
+// Calculate global thread coordinates
+int x = blockIdx.x * blockDim.x + threadIdx.x;
+int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (x >= width || y >= height) return;
+// Allocate shared memory for a tile of the image
+__shared__ unsigned char tile_r[BLOCK_SIZE][BLOCK_SIZE];
+__shared__ unsigned char tile_g[BLOCK_SIZE][BLOCK_SIZE];
+__shared__ unsigned char tile_b[BLOCK_SIZE][BLOCK_SIZE];
 
-    int idx = (y * width + x) * 3;
+// Thread coordinates within the block
+int tx = threadIdx.x;
+int ty = threadIdx.y;
 
-    unsigned char r = d_image[idx];
-    unsigned char g = d_image[idx + 1];
-    unsigned char b = d_image[idx + 2];
+// Compute global pixel coordinates
+int global_x = blockIdx.x * blockDim.x + threadIdx.x;
+int global_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    unsigned char r_eq = d_cdf_r[r];
-    unsigned char g_eq = d_cdf_g[g];
-    unsigned char b_eq = d_cdf_b[b];
+// Load the tile into shared memory
+if (global_x < width && global_y < height) {
+int idx = (global_y * width + global_x) * 3;
+tile_r[ty][tx] = d_image[idx];        // Red channel
+tile_g[ty][tx] = d_image[idx + 1];    // Green channel
+tile_b[ty][tx] = d_image[idx + 2];    // Blue channel
+}
 
-    d_output[idx] = r_eq;
-    d_output[idx + 1] = g_eq;
-    d_output[idx + 2] = b_eq;
+// Synchronize to make sure all threads have loaded their tile into shared memory
+__syncthreads();
+
+// Perform the histogram equalization on the tile
+if (global_x < width && global_y < height) {
+int idx = (global_y * width + global_x) * 3;
+
+// Apply the CDF to the corresponding channels
+unsigned char r_eq = d_cdf_r[tile_r[ty][tx]];
+unsigned char g_eq = d_cdf_g[tile_g[ty][tx]];
+unsigned char b_eq = d_cdf_b[tile_b[ty][tx]];
+
+d_output[idx] = r_eq;
+d_output[idx + 1] = g_eq;
+d_output[idx + 2] = b_eq;
+}
 }
 
 __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, int* d_hist_g, int* d_hist_b, int width, int height)
@@ -44,7 +70,6 @@ __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, in
     __shared__ int local_hist_g[256];
     __shared__ int local_hist_b[256];
 
-    // Initialize shared memory
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
     if (tid < 256) {
         local_hist_r[tid] = 0;
@@ -53,7 +78,6 @@ __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, in
     }
     __syncthreads();
 
-    // Calculate global indices
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -63,14 +87,12 @@ __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, in
         unsigned char g = d_image[idx + 1];
         unsigned char b = d_image[idx + 2];
 
-        // Accumulate into shared memory
         atomicAdd(&local_hist_r[r], 1);
         atomicAdd(&local_hist_g[g], 1);
         atomicAdd(&local_hist_b[b], 1);
     }
     __syncthreads();
 
-    // Write shared memory results back to global memory
     if (tid < 256) {
         atomicAdd(&d_hist_r[tid], local_hist_r[tid]);
         atomicAdd(&d_hist_g[tid], local_hist_g[tid]);
@@ -79,7 +101,6 @@ __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, in
 }
 
 
-// CUDA kernel to compute the CDF for each color channel
 __global__ void computeCDF(int* d_hist, unsigned char* d_cdf, int width, int height)
 {
     int idx = threadIdx.x;
@@ -93,119 +114,50 @@ __global__ void computeCDF(int* d_hist, unsigned char* d_cdf, int width, int hei
     d_cdf[idx] = (unsigned char)(cdf_accum * 255 / (width * height));
 }
 
-void normalizeHistogram(int* hist, int size, int height)
-{
-    int max_value = *std::max_element(hist, hist + size);
-    for (int i = 0; i < size; ++i) {
-        hist[i] = cv::saturate_cast<int>(height * hist[i] / max_value);
-    }
-}
-
-void drawHistogram(int* hist, int size, cv::Mat& image, const cv::Scalar& color)
-{
-    for (int i = 1; i < size; ++i) {
-        cv::line(image, cv::Point(i - 1, image.rows - hist[i - 1]),
-                 cv::Point(i, image.rows - hist[i]), color, 1, 8, 0);
-    }
-}
-
-__global__ void equalizeRGBImageTiled(const unsigned char* d_image, unsigned char* d_output, int width, int height, const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b)
-{
-    __shared__ unsigned char tile[16][16][3]; // Shared memory tile for RGB channels
-
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-
-    if (x < width && y < height) {
-        int idx = (y * width + x) * 3;
-
-        // Load data into shared memory
-        tile[ty][tx][0] = d_image[idx];
-        tile[ty][tx][1] = d_image[idx + 1];
-        tile[ty][tx][2] = d_image[idx + 2];
-    }
-    __syncthreads();
-
-    if (x < width && y < height) {
-        // Perform histogram equalization
-        unsigned char r_eq = d_cdf_r[tile[ty][tx][0]];
-        unsigned char g_eq = d_cdf_g[tile[ty][tx][1]];
-        unsigned char b_eq = d_cdf_b[tile[ty][tx][2]];
-
-        int idx = (y * width + x) * 3;
-        d_output[idx] = r_eq;
-        d_output[idx + 1] = g_eq;
-        d_output[idx + 2] = b_eq;
-    }
-}
-
 ///////////// GRAYSCALE
-
-
-// CUDA kernel to compute the histogram for a grayscale image
 __global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height) {
-    // Tile size (fixed block size)
-    const int TILE_SIZE = 16;  // Adjust to your needs
-    __shared__ int tile_hist[256];  // Shared memory for histogram within a tile
+    // Define the tile size from the BLOCK_SIZE macro
+    __shared__ int tile_hist[256];  // Shared memory for storing the histogram of the tile
 
-    // Initialize shared memory
-    int tid = threadIdx.x;
+    // Initialize shared memory to zero
+    int tid = threadIdx.x + threadIdx.y * blockDim.x;
     if (tid < 256) {
         tile_hist[tid] = 0;
     }
     __syncthreads();
 
-    // Calculate the global index (1D grid)
-    int idx = blockIdx.x * TILE_SIZE + threadIdx.x;
-    int x = idx % width;  // Column index based on 1D index
-    int y = idx / width;  // Row index based on 1D index
+    // Calculate the global pixel index
+    int x = blockIdx.x * BLOCK_SIZE + threadIdx.x;
+    int y = blockIdx.y * BLOCK_SIZE + threadIdx.y;
 
     if (x < width && y < height) {
-        unsigned char pixel = d_image[y * width + x];  // Access the image
-
-        // Accumulate histogram count for the pixel in the shared tile memory
-        atomicAdd(&tile_hist[pixel], 1);
+        unsigned char pixel = d_image[y * width + x];  // Access the pixel value
+        atomicAdd(&tile_hist[pixel], 1);  // Increment the histogram value in shared memory
     }
     __syncthreads();
 
-    // Write the results back to global memory from shared tile histogram
+    // Write the results from shared memory to global memory
     if (tid < 256) {
         atomicAdd(&d_hist[tid], tile_hist[tid]);
     }
 }
-
-
-// CUDA kernel to compute the CDF for a grayscale image
 __global__ void computeCDFGrayscale(int* d_hist, unsigned char* d_cdf, int width, int height) {
     int idx = threadIdx.x;
-    if (idx >= 256) return;
 
-    int cdf_accum = 0;
-    for (int i = 0; i <= idx; ++i) {
-        cdf_accum += d_hist[i];
+    if (idx < 256) {
+        int cdf_accum = 0;
+        // Accumulate the histogram values to compute CDF
+        for (int i = 0; i <= idx; ++i) {
+            cdf_accum += d_hist[i];
+        }
+
+        // Normalize and store the CDF value
+        d_cdf[idx] = (unsigned char)(cdf_accum * 255 / (width * height));
     }
-
-    d_cdf[idx] = (unsigned char)(cdf_accum * 255 / (width * height));
 }
-
-// CUDA kernel for histogram equalization of a grayscale image
 __global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned char* d_output, int width, int height, const unsigned char* d_cdf) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x >= width || y >= height) return;
-
-    int idx = y * width + x;
-    unsigned char pixel = d_image[idx];
-    d_output[idx] = d_cdf[pixel];
-}
-
-// CUDA kernel for histogram equalization with shared memory tiling
-__global__ void equalizeGrayscaleImageTiled(const unsigned char* d_image, unsigned char* d_output, int width, int height, const unsigned char* d_cdf) {
-    __shared__ unsigned char tile[16][16]; // Shared memory tile for grayscale pixels
+    // Shared memory tile for grayscale pixels
+    __shared__ unsigned char tile[BLOCK_SIZE][BLOCK_SIZE];
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -213,20 +165,16 @@ __global__ void equalizeGrayscaleImageTiled(const unsigned char* d_image, unsign
     int tx = threadIdx.x;
     int ty = threadIdx.y;
 
+    // Load the image data into shared memory (tile-based loading)
     if (x < width && y < height) {
-        int idx = y * width + x;
-
-        // Load data into shared memory
-        tile[ty][tx] = d_image[idx];
+        tile[ty][tx] = d_image[y * width + x];
     }
     __syncthreads();
 
+    // Perform histogram equalization in the tile
     if (x < width && y < height) {
-        // Perform histogram equalization
-        unsigned char pixel_eq = d_cdf[tile[ty][tx]];
-
-        int idx = y * width + x;
-        d_output[idx] = pixel_eq;
+        unsigned char pixel_eq = d_cdf[tile[ty][tx]];  // Map pixel to equalized value
+        d_output[y * width + x] = pixel_eq;
     }
 }
 

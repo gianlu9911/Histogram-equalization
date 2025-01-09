@@ -1,0 +1,4 @@
+Stage,Time (ms),Width,Height,TileWidth,TileHeight
+Histogram computation,0.065536,128,128,16,16
+CDF computation,0.090112,128,128,16,16
+Equalization,0.091104,128,128,16,16

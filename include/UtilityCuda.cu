@@ -147,33 +147,36 @@ __global__ void equalizeRGBImageTiled(const unsigned char* d_image, unsigned cha
 
 // CUDA kernel to compute the histogram for a grayscale image
 __global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height) {
-    __shared__ int local_hist[256];
+    // Tile size (fixed block size)
+    const int TILE_SIZE = 16;  // Adjust to your needs
+    __shared__ int tile_hist[256];  // Shared memory for histogram within a tile
 
     // Initialize shared memory
-    int tid = threadIdx.x + threadIdx.y * blockDim.x;
+    int tid = threadIdx.x;
     if (tid < 256) {
-        local_hist[tid] = 0;
+        tile_hist[tid] = 0;
     }
     __syncthreads();
 
-    // Calculate global indices
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    // Calculate the global index (1D grid)
+    int idx = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int x = idx % width;  // Column index based on 1D index
+    int y = idx / width;  // Row index based on 1D index
 
     if (x < width && y < height) {
-        int idx = y * width + x;
-        unsigned char pixel = d_image[idx];
+        unsigned char pixel = d_image[y * width + x];  // Access the image
 
-        // Accumulate into shared memory
-        atomicAdd(&local_hist[pixel], 1);
+        // Accumulate histogram count for the pixel in the shared tile memory
+        atomicAdd(&tile_hist[pixel], 1);
     }
     __syncthreads();
 
-    // Write shared memory results back to global memory
+    // Write the results back to global memory from shared tile histogram
     if (tid < 256) {
-        atomicAdd(&d_hist[tid], local_hist[tid]);
+        atomicAdd(&d_hist[tid], tile_hist[tid]);
     }
 }
+
 
 // CUDA kernel to compute the CDF for a grayscale image
 __global__ void computeCDFGrayscale(int* d_hist, unsigned char* d_cdf, int width, int height) {

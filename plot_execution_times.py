@@ -1,44 +1,36 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sequential_file = "execution_times_sequential.csv"
-cuda_file = "execution_times_cuda.csv"
+# Load CSV files
+seq_df = pd.read_csv('execution_times_sequential.csv')
+cuda_df = pd.read_csv('execution_times_cuda.csv')
 
-sequential_df = pd.read_csv(sequential_file)
-cuda_df = pd.read_csv(cuda_file)
+# Merge the dataframes on matching columns (Width, Height, Channels, and Method)
+merged_df = pd.merge(seq_df, cuda_df, on=['Width', 'Height', 'Channels', 'Method'], suffixes=('_seq', '_cuda'))
 
-sizes = [128, 256, 512, 1024, 2048]
+# Calculate speedup
+merged_df['Speedup'] = merged_df['ExecutionTime(ms)_seq'] / merged_df['ExecutionTime(ms)_cuda']
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+# Separate grayscale and RGB versions
+grayscale_df = merged_df[merged_df['Channels'] == 1]
+rgb_df = merged_df[merged_df['Channels'] == 3]
 
-axes = axes.flatten()
+# Plot speedup for grayscale and RGB separately
+plt.figure(figsize=(10, 6))
 
-for i, size in enumerate(sizes):
-    ax = axes[i]
-    
-    seq_data = sequential_df[sequential_df['Image Size'] == size]
-    cuda_data = cuda_df[cuda_df['Image Size'] == size]
+# Grayscale plot
+plt.scatter(grayscale_df['Width'], grayscale_df['Height'], c=grayscale_df['Speedup'], cmap='Blues', label='Grayscale', marker='o')
+# RGB plot
+plt.scatter(rgb_df['Width'], rgb_df['Height'], c=rgb_df['Speedup'], cmap='Reds', label='RGB', marker='^')
 
-    if seq_data.empty or cuda_data.empty:
-        continue
+# Set plot labels and title
+plt.title('Speedup of CUDA over Sequential Execution', fontsize=14)
+plt.xlabel('Image Width', fontsize=12)
+plt.ylabel('Image Height', fontsize=12)
+plt.colorbar(label='Speedup')
+plt.legend()
+plt.grid(True)
 
-    sequential_total_time = seq_data['Total Time (ms)'].values[0]
-
-    for block in cuda_data['Blocks'].unique():
-        block_data = cuda_data[cuda_data['Blocks'] == block]
-        
-        x_threads = block_data['Threads'].values
-        y_speedup = sequential_total_time / block_data['Total Time (ms)'].values
-
-        ax.plot(x_threads, y_speedup, label=f'Blocks = {block}', marker='o')
-
-    ax.set_xlabel('Number of Threads', fontsize=12)
-    ax.set_ylabel('Speedup', fontsize=12)
-    ax.set_title(f'Speedup vs Number of Threads for Image Size {size}', fontsize=14)
-    ax.grid(True)
-    ax.legend(title="Block Configuration")
-
-axes[-1].axis('off') #remove last empty plot
-
+# Show the plot
 plt.tight_layout()
 plt.show()

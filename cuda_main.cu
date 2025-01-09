@@ -273,27 +273,39 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage) {
 
 
 int main() {
-    // Load the image as grayscale
-    cv::Mat inputImageGray = cv::imread("../images/img2.bmp", cv::IMREAD_GRAYSCALE); // Load in grayscale
+    // Load the original image as grayscale and color
+    cv::Mat inputImageGray = cv::imread("../images/img2.bmp", cv::IMREAD_GRAYSCALE);
     if (inputImageGray.empty()) {
-        std::cerr << "Error: Could not load image!" << std::endl;
+        std::cerr << "Error: Could not load grayscale image!" << std::endl;
         return -1;
     }
 
-    // Process grayscale image
-    std::cout << "Processing grayscale image..." << std::endl;
-    equalizeImageWithCUDAGrayscale(inputImageGray);
-
-    // Load the image as color (RGB)
-    cv::Mat inputImageColor = cv::imread("../images/img2.bmp", cv::IMREAD_COLOR); // Load in color (3 channels)
+    cv::Mat inputImageColor = cv::imread("../images/img2.bmp", cv::IMREAD_COLOR);
     if (inputImageColor.empty()) {
-        std::cerr << "Error: Could not load image!" << std::endl;
+        std::cerr << "Error: Could not load color image!" << std::endl;
         return -1;
     }
 
-    // Process color image
-    std::cout << "Processing color image..." << std::endl;
-    equalizeImageWithCUDA(inputImageColor);
+    // List of sizes to process (square resolutions)
+    std::vector<int> sizes = {128, 256, 512, 1024, 2048};
+
+    // Loop through each resolution
+    for (int size : sizes) {
+        // Resize images to the current resolution (size x size)
+        cv::Mat resizedGray, resizedColor;
+        cv::resize(inputImageGray, resizedGray, cv::Size(size, size));
+        cv::resize(inputImageColor, resizedColor, cv::Size(size, size));
+
+        // Process grayscale image
+        std::cout << "Processing grayscale image at resolution: " 
+                  << size << "x" << size << std::endl;
+        equalizeImageWithCUDAGrayscale(resizedGray);
+
+        // Process color image
+        std::cout << "Processing color image at resolution: " 
+                  << size << "x" << size << std::endl;
+        equalizeImageWithCUDA(resizedColor);
+    }
 
     return 0;
 }

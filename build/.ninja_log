@@ -1,18 +1,6 @@
 # ninja log v5
 2	1649	1736356651124819596	CMakeFiles/histogram_sequential.dir/sequential_main.cpp.o	2c3874a778f6259e
 1649	1806	1736356651274815193	histogram_sequential	5f3f144747d489c5
-3834	3959	1736414184674264979	histogram_cuda	e6323c18e2010197
-1	3805	1736414184514264540	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
-3806	3834	1736414184544264623	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
-1	3811	1736416523870779715	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
-3811	3837	1736416523900779716	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
-3837	3979	1736416524040779718	histogram_cuda	e6323c18e2010197
-2	4009	1736416541727530314	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
-4010	4037	1736416541760032354	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
-4037	4162	1736416541879206498	histogram_cuda	e6323c18e2010197
-1	3861	1736416617228701021	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
-3861	3887	1736416617258702905	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
-3887	4000	1736416617368709805	histogram_cuda	e6323c18e2010197
+4183	4351	1736420971845602546	histogram_cuda	e6323c18e2010197
 1	4147	1736420971635589298	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
 4147	4183	1736420971675591822	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
-4183	4351	1736420971845602546	histogram_cuda	e6323c18e2010197

@@ -1,10 +1,9 @@
 #include "UtilityCuda.cu"
 
-
-
 void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
     int width = inputImage.cols;
     int height = inputImage.rows;
+    int channels = 1;  // Since it's a grayscale image, we set channels to 1.
 
     // Device memory allocation
     unsigned char *d_image, *d_output;
@@ -113,9 +112,10 @@ void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
 
     // Save the output
     cv::imwrite("../outputs/cuda_equalized_grayscale_image.jpg", outputImage);
+
+    // Save the total execution time to the CSV file
+    writeTotalExecutionTimeToCSV(width, height, channels, totalMilliseconds, grid.x * grid.y, block.x * block.y, "Grayscale");
 }
-
-
 
 
 
@@ -271,8 +271,6 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage) {
     cv::imwrite("../outputs/cuda_equalized_RGB_image.jpg", outputImage);
 }
 
-// Similar modification for grayscale function
-// You can call `saveExecutionTimeToCSV` function in the grayscale code as well
 
 int main() {
     // Load the image as grayscale

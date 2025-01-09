@@ -1,3 +1,3 @@
 Width,Height,Channels,Method,ExecutionTime(ms),Blocks,Threads
-512,512,3,RGB,1.18461,1024,256
-512,512,3,RGB,1.17907,1024,256
+512,512,1,Grayscale,3.5881,1024,256
+512,512,3,RGB,1.16541,1024,256

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <fstream>
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 
@@ -223,4 +225,36 @@ __global__ void equalizeGrayscaleImageTiled(const unsigned char* d_image, unsign
         int idx = y * width + x;
         d_output[idx] = pixel_eq;
     }
+}
+
+void writeTotalExecutionTimeToCSV(int width, int height, int channels, 
+    float totalExecutionTime, int blocks, int threads, 
+    const std::string& imageType) {
+// Open the CSV file in append mode
+std::ofstream file("../execution_times_cuda.csv", std::ios::app);
+
+if (file.is_open()) {
+// Check if the file is empty and if so, write the header
+file.seekp(0, std::ios::end);  // Move to the end of the file
+if (file.tellp() == 0) {
+// File is empty, write the header
+file << "Width,Height,Channels,Method,ExecutionTime(ms),Blocks,Threads\n";
+}
+
+// Determine the method based on image type (RGB or Grayscale)
+std::string method = (imageType == "RGB") ? "RGB" : "Grayscale";
+
+// Write the total execution data to the file
+file << width << ","
+<< height << ","
+<< channels << ","
+<< method << ","
+<< totalExecutionTime << ","
+<< blocks << ","
+<< threads << "\n";
+
+file.close();
+} else {
+std::cerr << "Error: Could not open CSV file for writing!" << std::endl;
+}
 }

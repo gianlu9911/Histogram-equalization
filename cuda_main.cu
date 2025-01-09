@@ -71,25 +71,6 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage)
     normalizeHistogram(h_hist_g, 256, max_height);
     normalizeHistogram(h_hist_b, 256, max_height);
 
-    // Create black images for plotting the histograms
-    cv::Mat hist_img_r = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-    cv::Mat hist_img_g = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-    cv::Mat hist_img_b = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-
-    // Draw the histograms on the black images
-    //drawHistogram(h_hist_r, 256, hist_img_r, cv::Scalar(0, 0, 255)); // Red histogram in red color
-    //drawHistogram(h_hist_g, 256, hist_img_g, cv::Scalar(0, 255, 0)); // Green histogram in green color
-    //drawHistogram(h_hist_b, 256, hist_img_b, cv::Scalar(255, 0, 0)); // Blue histogram in blue color
-
-    // Combine the individual histograms into one image
-    cv::Mat combined_hist;
-    cv::hconcat(hist_img_r, hist_img_g, combined_hist);
-    cv::hconcat(combined_hist, hist_img_b, combined_hist);
-
-    // Display the combined histogram image
-    //cv::imshow("RGB Histograms", combined_hist);
-    //cv::waitKey(0);
-
     // Allocate memory for CDFs
     CUDA_CHECK(cudaMalloc(&d_cdf_r, 256 * sizeof(unsigned char)));
     CUDA_CHECK(cudaMalloc(&d_cdf_g, 256 * sizeof(unsigned char)));
@@ -111,16 +92,27 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage)
     CUDA_CHECK(cudaEventElapsedTime(&cdfTime, cdfStart, cdfStop));
     std::cout << "CDF computation time: " << cdfTime << " ms" << std::endl;
 
-    // Launch the kernel to apply histogram equalization
+    // Start timing for histogram equalization
     CUDA_CHECK(cudaEventRecord(eqStart));
+
+    // Launch the kernel to apply histogram equalization
     equalizeRGBImageTiled<<<grid, block>>>(d_image, d_output, width, height, d_cdf_r, d_cdf_g, d_cdf_b);
+
+    // Stop timing for histogram equalization
     CUDA_CHECK(cudaEventRecord(eqStop));
     CUDA_CHECK(cudaEventSynchronize(eqStop));
 
-    // Stop timing for histogram equalization
     float eqTime = 0.0f;
     CUDA_CHECK(cudaEventElapsedTime(&eqTime, eqStart, eqStop));
     std::cout << "Histogram equalization time: " << eqTime << " ms" << std::endl;
+
+    // Stop timing for the entire process
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
+
+    float totalTime = 0.0f;
+    CUDA_CHECK(cudaEventElapsedTime(&totalTime, start, stop));
+    std::cout << "Total execution time: " << totalTime << " ms" << std::endl;
 
     // Copy result back to host
     cv::Mat outputImage(height, width, CV_8UC3);
@@ -147,6 +139,7 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage)
     // Save the processed image
     cv::imwrite("../outputs/cuda_equalized_RGB_image.jpg", outputImage);
 }
+
 
 void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
     int width = inputImage.cols;

@@ -116,7 +116,7 @@ void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
     CUDA_CHECK(cudaFree(d_cdf));
 
     // Save the output
-    cv::imwrite("../outputs/cuda_equalized_grayscale_image.jpg", outputImage);
+    cv::imwrite("../outputs/cuda_equalized_grayscale_image_" + std::to_string(width) + "_" + std::to_string(height) + ".jpg", outputImage);
 
     // Save the total execution time to the CSV file
     std::ofstream csvFile;
@@ -256,6 +256,17 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
     // Copy the result back to the host
     cudaMemcpy(inputImage.data, d_output, imageSize, cudaMemcpyDeviceToHost);
 
+    // Construct the output filename
+    std::stringstream outputFileName;
+    outputFileName << "../outputs/RGB_output_image_" << width << "x" << height << "_CUDA.jpg";
+
+    // Save the processed image
+    if (!cv::imwrite(outputFileName.str(), inputImage)) {
+        std::cerr << "Error: Could not save the image!" << std::endl;
+    } else {
+        std::cout << "Image saved as " << outputFileName.str() << std::endl;
+    }
+
     // Free device memory
     cudaFree(d_image);
     cudaFree(d_output);
@@ -295,7 +306,7 @@ int main() {
     }
 
     // List of sizes to process (square resolutions)
-    std::vector<int> sizes = {128};
+    std::vector<int> sizes = {128, 256, 512, 1024, 2048};
 
     // Loop through each resolution
     for (int size : sizes) {

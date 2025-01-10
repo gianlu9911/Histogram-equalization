@@ -115,97 +115,72 @@ __global__ void computeCDF(int* d_hist, unsigned char* d_cdf, int width, int hei
 }
 
 ///////////// GRAYSCALE
-__global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height) {
-    // Define the tile size from the BLOCK_SIZE macro
-    __shared__ int tile_hist[256];  // Shared memory for storing the histogram of the tile
 
-    // Initialize shared memory to zero
+
+#define BLOCK_SIZE 32
+
+__global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height) {
+    __shared__ int tile_hist[256];
+
+    // Initialize shared memory
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
     if (tid < 256) {
         tile_hist[tid] = 0;
     }
     __syncthreads();
 
-    // Calculate the global pixel index
-    int x = blockIdx.x * BLOCK_SIZE + threadIdx.x;
-    int y = blockIdx.y * BLOCK_SIZE + threadIdx.y;
+    // Compute global pixel position
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        unsigned char pixel = d_image[y * width + x];  // Access the pixel value
-        atomicAdd(&tile_hist[pixel], 1);  // Increment the histogram value in shared memory
+        unsigned char pixel = d_image[y * width + x];
+        atomicAdd(&tile_hist[pixel], 1);
     }
     __syncthreads();
 
-    // Write the results from shared memory to global memory
+    // Update global histogram
     if (tid < 256) {
         atomicAdd(&d_hist[tid], tile_hist[tid]);
     }
 }
+
 __global__ void computeCDFGrayscale(int* d_hist, unsigned char* d_cdf, int width, int height) {
     int idx = threadIdx.x;
 
     if (idx < 256) {
+        int total_pixels = width * height;
         int cdf_accum = 0;
-        // Accumulate the histogram values to compute CDF
+
         for (int i = 0; i <= idx; ++i) {
             cdf_accum += d_hist[i];
         }
 
-        // Normalize and store the CDF value
-        d_cdf[idx] = (unsigned char)(cdf_accum * 255 / (width * height));
+        d_cdf[idx] = (unsigned char)((cdf_accum * 255.0f) / total_pixels);
     }
 }
-__global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned char* d_output, int width, int height, const unsigned char* d_cdf) {
-    // Shared memory tile for grayscale pixels
-    __shared__ unsigned char tile[BLOCK_SIZE][BLOCK_SIZE];
 
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
+__global__ void equalizeGrayscaleImage(unsigned char* d_image, unsigned char* d_output, int width, int height, unsigned char* d_cdf) {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
+    int x = blockIdx.x * blockDim.x + tx;
+    int y = blockIdx.y * blockDim.y + ty;
 
-    // Load the image data into shared memory (tile-based loading)
+    // Check for valid pixel location
     if (x < width && y < height) {
-        tile[ty][tx] = d_image[y * width + x];
+        unsigned char pixel = d_image[y * width + x];
+        
+        // Use shared memory for fast CDF access
+        __shared__ unsigned char shared_cdf[256];
+        if (tx == 0 && ty == 0) {
+            // Copy CDF values into shared memory (can be done once per block)
+            for (int i = 0; i < 256; i++) {
+                shared_cdf[i] = d_cdf[i];
+            }
+        }
+        __syncthreads();
+
+        // Perform the equalization using shared CDF
+        d_output[y * width + x] = shared_cdf[pixel];
     }
-    __syncthreads();
-
-    // Perform histogram equalization in the tile
-    if (x < width && y < height) {
-        unsigned char pixel_eq = d_cdf[tile[ty][tx]];  // Map pixel to equalized value
-        d_output[y * width + x] = pixel_eq;
-    }
-}
-
-void writeTotalExecutionTimeToCSV(int width, int height, int channels, 
-    float totalExecutionTime, int blocks, int threads, 
-    const std::string& imageType) {
-// Open the CSV file in append mode
-std::ofstream file("../execution_times_cuda.csv", std::ios::app);
-
-if (file.is_open()) {
-// Check if the file is empty and if so, write the header
-file.seekp(0, std::ios::end);  // Move to the end of the file
-if (file.tellp() == 0) {
-// File is empty, write the header
-file << "Width,Height,Channels,Method,ExecutionTime(ms),Blocks,Threads\n";
-}
-
-// Determine the method based on image type (RGB or Grayscale)
-std::string method = (imageType == "RGB") ? "RGB" : "Grayscale";
-
-// Write the total execution data to the file
-file << width << ","
-<< height << ","
-<< channels << ","
-<< method << ","
-<< totalExecutionTime << ","
-<< blocks << ","
-<< threads << "\n";
-
-file.close();
-} else {
-std::cerr << "Error: Could not open CSV file for writing!" << std::endl;
-}
 }

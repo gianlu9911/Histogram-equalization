@@ -19,3 +19,12 @@
 1	3580	1736494850444846849	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
 3580	3614	1736494850474845985	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
 3614	3776	1736494850644841094	histogram_cuda	e6323c18e2010197
+1	4001	1736495029069011028	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
+4001	4035	1736495029109009877	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
+4035	4207	1736495029279004986	histogram_cuda	e6323c18e2010197
+2	4343	1736497461175739169	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
+4343	4378	1736497461216213284	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
+4378	4540	1736497461378109741	histogram_cuda	e6323c18e2010197
+1	-98764	1736499620373013907	CMakeFiles/histogram_cuda.dir/cuda_main.cu.o	2c2ff2dc66c37f2a
+-98764	-98729	1736499620413488021	CMakeFiles/histogram_cuda.dir/cmake_device_link.o	b558ee14526fb236
+-98729	-98551	1736499620575384479	histogram_cuda	e6323c18e2010197

@@ -164,7 +164,7 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
     unsigned char *d_cdf_r, *d_cdf_g, *d_cdf_b;
 
     // Allocate device memory (ensure it's the correct size)
-    size_t imageSize = width * height * 3 * sizeof(unsigned char);
+    size_t imageSize = width * height * channels * sizeof(unsigned char);
     size_t histSize = 256 * sizeof(int);
 
     cudaMalloc(&d_image, imageSize);
@@ -198,21 +198,23 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
 
     // Write the header if the file is empty
     if (csvFile.tellp() == 0) {
-        csvFile << "Stage,Time (ms),Width,Height,Channels,TileWidth,TileHeight" << std::endl;
+        csvFile << "Stage,Time (ms),Width,Height,Channels,TileWidth,TileHeight,BlockX,BlockY" << std::endl;
     }
 
     // Record total execution start time
     cudaEventRecord(start);
+
+    // Define block and grid sizes
+    dim3 block(tile_width, tile_height); // Block size
+    dim3 grid((width + tile_width - 1) / tile_width, 
+              (height + tile_height - 1) / tile_height); // Grid size
 
     // Timing the histogram computation kernel
     cudaEvent_t stage_start, stage_stop;
     cudaEventCreate(&stage_start);
     cudaEventCreate(&stage_stop);
     cudaEventRecord(stage_start);
-    
-    // Define block and grid sizes
-    dim3 block(tile_width, tile_height);
-    dim3 grid((width + tile_width - 1) / tile_width, (height + tile_height - 1) / tile_height);
+
     // Launch the compute histogram kernel
     computeHistogram<<<grid, block>>>(d_image, d_hist_r, d_hist_g, d_hist_b, width, height);
     cudaEventRecord(stage_stop);
@@ -220,11 +222,12 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, stage_start, stage_stop);
     std::cout << "Histogram computation time " << milliseconds << " ms" << std::endl;
-    csvFile << "Histogram computation," << milliseconds << "," << width << "," << height << "," << channels << "," << tile_width << "," << tile_height << std::endl;
+    csvFile << "Histogram computation," << milliseconds << "," << width << "," << height << "," 
+            << channels << "," << tile_width << "," << tile_height << "," 
+            << block.x << "," << block.y << std::endl;
 
     // Timing the CDF computation kernel
     cudaEventRecord(stage_start);
-    // Compute the CDF for each channel (each one requires its own kernel)
     computeCDF<<<dim3(1, 1), 256>>>(d_hist_r, d_cdf_r, width, height);
     computeCDF<<<dim3(1, 1), 256>>>(d_hist_g, d_cdf_g, width, height);
     computeCDF<<<dim3(1, 1), 256>>>(d_hist_b, d_cdf_b, width, height);
@@ -232,26 +235,29 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
     cudaDeviceSynchronize();
     cudaEventElapsedTime(&milliseconds, stage_start, stage_stop);
     std::cout << "CDF computation time " << milliseconds << " ms" << std::endl;
-    csvFile << "CDF computation," << milliseconds << "," << width << "," << height << "," << channels << "," << tile_width << "," << tile_height << std::endl;
+    csvFile << "CDF computation," << milliseconds << "," << width << "," << height << "," 
+            << channels << "," << tile_width << "," << tile_height << "," 
+            << block.x << "," << block.y << std::endl;
 
     // Timing the equalization kernel
     cudaEventRecord(stage_start);
-    // Launch the equalization kernel
     equalizeRGBImage<<<grid, block>>>(d_image, d_output, width, height, d_cdf_r, d_cdf_g, d_cdf_b, tile_width, tile_height);
     cudaEventRecord(stage_stop);
     cudaDeviceSynchronize();
     cudaEventElapsedTime(&milliseconds, stage_start, stage_stop);
     std::cout << "Equalization time " << milliseconds << " ms" << std::endl;
-    csvFile << "Equalization," << milliseconds << "," << width << "," << height << "," << channels << "," << tile_width << "," << tile_height << std::endl;
+    csvFile << "Equalization," << milliseconds << "," << width << "," << height << "," 
+            << channels << "," << tile_width << "," << tile_height << "," 
+            << block.x << "," << block.y << std::endl;
 
     // Record total execution end time and calculate total time
     cudaEventRecord(stop);
     cudaDeviceSynchronize();
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "Total execution time " << milliseconds << " ms" << std::endl;
-
-    // Save the total execution time in the CSV
-    csvFile << "Total execution," << milliseconds << "," << width << "," << height << "," << channels << "," << tile_width << "," << tile_height << std::endl;
+    csvFile << "Total execution," << milliseconds << "," << width << "," << height << "," 
+            << channels << "," << tile_width << "," << tile_height << "," 
+            << block.x << "," << block.y << std::endl;
 
     // Copy the result back to the host
     cudaMemcpy(inputImage.data, d_output, imageSize, cudaMemcpyDeviceToHost);
@@ -308,6 +314,9 @@ int main() {
     // List of sizes to process (square resolutions)
     std::vector<int> sizes = {128, 256, 512, 1024, 2048};
 
+    // List of tile sizes for CUDA processing
+    std::vector<int> tileSizes = {16, 32, 64}; // Test with different tile sizes
+
     // Loop through each resolution
     for (int size : sizes) {
         // Resize images to the current resolution (size x size)
@@ -318,12 +327,15 @@ int main() {
         // Process grayscale image
         std::cout << "Processing grayscale image at resolution: " 
                   << size << "x" << size << std::endl;
-        equalizeImageWithCUDAGrayscale(resizedGray);
+        // equalizeImageWithCUDAGrayscale(resizedGray);
 
-        // Process color image
-        std::cout << "Processing color image at resolution: " 
-                  << size << "x" << size << std::endl;
-        equalizeImageWithCUDA(resizedColor, 16, 16);
+        // Process color image with different tile sizes
+        for (int tileSize : tileSizes) {
+            std::cout << "Processing color image at resolution: " 
+                      << size << "x" << size << " with tile size: " 
+                      << tileSize << "x" << tileSize << std::endl;
+            equalizeImageWithCUDA(resizedColor, tileSize, tileSize);
+        }
     }
 
     return 0;

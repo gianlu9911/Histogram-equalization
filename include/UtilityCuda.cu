@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 
-#define BLOCK_SIZE 16  // Define BLOCK_SIZE with an appropriate value
+#define BLOCK_SIZE 32  
 
 #define CUDA_CHECK(call) \
 { \

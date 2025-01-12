@@ -41,14 +41,14 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "histogram_cuda::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-histogram_cuda-Debug-341bcfadbba8a002aaf9.json",
+					"jsonFile" : "target-histogram_cuda-Debug-90ca8d7e62865174f0ce.json",
 					"name" : "histogram_cuda",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "histogram_sequential::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-histogram_sequential-Debug-f4d22a430efd04094901.json",
+					"jsonFile" : "target-histogram_sequential-Debug-ff2f7dcfd05f4cb219cb.json",
 					"name" : "histogram_sequential",
 					"projectIndex" : 0
 				}
@@ -58,8 +58,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build",
-		"source" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization"
+		"build" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization/build",
+		"source" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization"
 	},
 	"version" : 
 	{

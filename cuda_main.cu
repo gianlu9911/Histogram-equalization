@@ -15,6 +15,15 @@
     } \
 }
 
+__global__ void warmUpKernel() {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    // No operation, just to warm up the device
+    if (idx == 0) {
+        printf("CUDA device warmed up!\n");
+    }
+}
+
+
 void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
     int width = inputImage.cols;
     int height = inputImage.rows;
@@ -43,6 +52,10 @@ void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
     CUDA_CHECK(cudaMemset(d_hist, 0, 256 * sizeof(int)));
 
     CUDA_CHECK(cudaMalloc(&d_cdf, 256 * sizeof(unsigned char)));
+
+    // Warm-up kernel
+    warmUpKernel<<<1, 1>>>();
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     // Histogram computation
     dim3 block(TILE_WIDTH, TILE_HEIGHT);
@@ -134,6 +147,10 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
+
+    // Warm-up kernel
+    warmUpKernel<<<1, 1>>>();
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     // Open the CSV file in append mode
     std::ofstream csvFile("../execution_times_cuda.csv", std::ios::app);
@@ -262,9 +279,8 @@ int main() {
         cv::resize(inputImageColor, resizedColor, cv::Size(size, size));
 
         // Process grayscale image
-        std::cout << "Processing grayscale image at resolution: " 
-                  << size << "x" << size << std::endl;
-        equalizeImageWithCUDAGrayscale(resizedGray);
+        //std::cout << "Processing grayscale image at resolution: " << size << "x" << size << std::endl;
+        //equalizeImageWithCUDAGrayscale(resizedGray);
 
         // Process color image
         std::cout << "Processing color image at resolution: " 

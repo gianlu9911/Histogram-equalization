@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "histogram_sequential"
+			"path" : "histogram_cuda"
 		}
 	],
 	"backtrace" : 1,
@@ -26,13 +26,13 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 35,
+				"line" : 41,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 48,
+				"line" : 49,
 				"parent" : 0
 			},
 			{
@@ -55,14 +55,14 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-g -std=gnu++17 -fPIE"
+					"fragment" : "-g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -Xcompiler=-fPIE"
 				}
 			],
 			"includes" : 
 			[
 				{
 					"backtrace" : 3,
-					"path" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/include"
+					"path" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization/include"
 				},
 				{
 					"backtrace" : 4,
@@ -70,12 +70,12 @@
 					"path" : "/usr/local/include/opencv4"
 				}
 			],
-			"language" : "CXX",
+			"language" : "CUDA",
 			"languageStandard" : 
 			{
 				"backtraces" : 
 				[
-					2
+					1
 				],
 				"standard" : "17"
 			},
@@ -85,13 +85,13 @@
 			]
 		}
 	],
-	"id" : "histogram_sequential::@6890427a1f51a3e7e1df",
+	"id" : "histogram_cuda::@6890427a1f51a3e7e1df",
 	"link" : 
 	{
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-g",
+				"fragment" : "-g \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\"",
 				"role" : "flags"
 			},
 			{
@@ -176,12 +176,32 @@
 				"backtrace" : 2,
 				"fragment" : "/usr/local/lib/libopencv_core.so.4.11.0",
 				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lcudadevrt",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lcudart_static",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lrt",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lpthread",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-ldl",
+				"role" : "libraries"
 			}
 		],
-		"language" : "CXX"
+		"language" : "CUDA"
 	},
-	"name" : "histogram_sequential",
-	"nameOnDisk" : "histogram_sequential",
+	"name" : "histogram_cuda",
+	"nameOnDisk" : "histogram_cuda",
 	"paths" : 
 	{
 		"build" : ".",
@@ -202,7 +222,7 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "sequential_main.cpp",
+			"path" : "cuda_main.cu",
 			"sourceGroupIndex" : 0
 		}
 	],

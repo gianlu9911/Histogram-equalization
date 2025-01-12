@@ -6,16 +6,7 @@
 
 #define BLOCK_SIZE 32  
 
-#define CUDA_CHECK(call) \
-{ \
-    const cudaError_t error = call; \
-    if (error != cudaSuccess) \
-    { \
-        fprintf(stderr, "CUDA Error at %s:%d: %s\n", __FILE__, __LINE__, #call); \
-        fprintf(stderr, "Error code: %d, Reason: %s\n", error, cudaGetErrorString(error)); \
-        exit(EXIT_FAILURE); \
-    } \
-}
+
 
 __global__ void equalizeRGBImage(const unsigned char* d_image, unsigned char* d_output, int width, int height,
     const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b,
@@ -116,71 +107,81 @@ __global__ void computeCDF(int* d_hist, unsigned char* d_cdf, int width, int hei
 
 ///////////// GRAYSCALE
 
+__global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height)
+{
+    __shared__ int local_hist[256];
 
-#define BLOCK_SIZE 32
-
-__global__ void computeHistogramGrayscale(const unsigned char* d_image, int* d_hist, int width, int height) {
-    __shared__ int tile_hist[256];
-
-    // Initialize shared memory
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
     if (tid < 256) {
-        tile_hist[tid] = 0;
+        local_hist[tid] = 0;
     }
     __syncthreads();
 
-    // Compute global pixel position
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        unsigned char pixel = d_image[y * width + x];
-        atomicAdd(&tile_hist[pixel], 1);
+        int idx = y * width + x;
+        unsigned char gray_value = d_image[idx];
+
+        atomicAdd(&local_hist[gray_value], 1);
     }
     __syncthreads();
 
-    // Update global histogram
     if (tid < 256) {
-        atomicAdd(&d_hist[tid], tile_hist[tid]);
+        atomicAdd(&d_hist[tid], local_hist[tid]);
     }
 }
 
-__global__ void computeCDFGrayscale(int* d_hist, unsigned char* d_cdf, int width, int height) {
+__global__ void computeCDFGrayscale(int* d_hist, unsigned char* d_cdf, int width, int height)
+{
     int idx = threadIdx.x;
+    if (idx >= 256) return;
 
-    if (idx < 256) {
-        int total_pixels = width * height;
-        int cdf_accum = 0;
-
-        for (int i = 0; i <= idx; ++i) {
-            cdf_accum += d_hist[i];
-        }
-
-        d_cdf[idx] = (unsigned char)((cdf_accum * 255.0f) / total_pixels);
+    int cdf_accum = 0;
+    for (int i = 0; i <= idx; ++i) {
+        cdf_accum += d_hist[i];
     }
+
+    // Normalize the CDF and store it in the d_cdf array
+    d_cdf[idx] = (unsigned char)(cdf_accum * 255 / (width * height));
 }
 
-__global__ void equalizeGrayscaleImage(unsigned char* d_image, unsigned char* d_output, int width, int height, unsigned char* d_cdf) {
+__global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned char* d_output, int width, int height,
+    const unsigned char* d_cdf, int tile_width, int tile_height)
+{
+    // Calculate global thread coordinates
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    // Allocate shared memory for a tile of the image
+    __shared__ unsigned char tile[BLOCK_SIZE][BLOCK_SIZE];
+
+    // Thread coordinates within the block
     int tx = threadIdx.x;
     int ty = threadIdx.y;
-    int x = blockIdx.x * blockDim.x + tx;
-    int y = blockIdx.y * blockDim.y + ty;
 
-    // Check for valid pixel location
-    if (x < width && y < height) {
-        unsigned char pixel = d_image[y * width + x];
-        
-        // Use shared memory for fast CDF access
-        __shared__ unsigned char shared_cdf[256];
-        if (tx == 0 && ty == 0) {
-            // Copy CDF values into shared memory (can be done once per block)
-            for (int i = 0; i < 256; i++) {
-                shared_cdf[i] = d_cdf[i];
-            }
-        }
-        __syncthreads();
+    // Compute global pixel coordinates
+    int global_x = blockIdx.x * blockDim.x + threadIdx.x;
+    int global_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-        // Perform the equalization using shared CDF
-        d_output[y * width + x] = shared_cdf[pixel];
+    // Load the tile into shared memory
+    if (global_x < width && global_y < height) {
+        int idx = global_y * width + global_x;
+        tile[ty][tx] = d_image[idx];  // Grayscale channel
+    }
+
+    // Synchronize to make sure all threads have loaded their tile into shared memory
+    __syncthreads();
+
+    // Perform the histogram equalization on the tile
+    if (global_x < width && global_y < height) {
+        int idx = global_y * width + global_x;
+
+        // Apply the CDF to the pixel
+        unsigned char eq_value = d_cdf[tile[ty][tx]];
+
+        // Store the equalized pixel in the output image
+        d_output[idx] = eq_value;
     }
 }

@@ -4,9 +4,22 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 
-#define BLOCK_SIZE 32  
+#define BLOCK_SIZE 64  
 
+#define CUDA_CHECK(call) { \
+    cudaError_t err = call; \
+    if (err != cudaSuccess) { \
+        std::cerr << "CUDA error in " << __FILE__ << " at line " << __LINE__ << ": " \
+                  << cudaGetErrorString(err) << std::endl; \
+        exit(EXIT_FAILURE); \
+    } \
+}
 
+__global__ void warmUpKernel() {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    // No operation, just to warm up the device
+
+}
 
 __global__ void equalizeRGBImage(const unsigned char* d_image, unsigned char* d_output, int width, int height,
     const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b,
@@ -37,7 +50,6 @@ tile_g[ty][tx] = d_image[idx + 1];    // Green channel
 tile_b[ty][tx] = d_image[idx + 2];    // Blue channel
 }
 
-// Synchronize to make sure all threads have loaded their tile into shared memory
 __syncthreads();
 
 // Perform the histogram equalization on the tile

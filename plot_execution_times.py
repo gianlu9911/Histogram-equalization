@@ -1,72 +1,63 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load data
-sequential_file = 'execution_times_sequential.csv'
-cuda_file = 'execution_times_cuda.csv'
+# Load the sequential execution times data
+sequential_df = pd.read_csv('execution_times_sequential.csv')
 
-df_sequential = pd.read_csv(sequential_file)
-df_cuda = pd.read_csv(cuda_file)
+# Load the parallel execution times (CUDA) data
+cuda_df = pd.read_csv('execution_times_cuda.csv')
 
-# Define a function to map methods dynamically
-def map_method(row):
-    if row['Channels'] == 1 and row['Method'] != 'OpenCV Grayscale':
-        return 'grayscale'
-    elif row['Channels'] == 3 and row['Method'] != 'OpenCV Color':
-        return 'rgb'
-    return None
+# Filter only 'Total execution' stage in the CUDA data
+cuda_df_filtered = cuda_df[cuda_df['Stage'] == 'Total execution']
 
-# Apply mapping to sequential data
-df_sequential['MappedMethod'] = df_sequential.apply(map_method, axis=1)
-df_cuda['MappedMethod'] = df_cuda['Method'].str.strip().str.lower()
+# Create an empty list to store the results
+results = []
 
-# Debug: Check mapped methods
-print("\nMapped Sequential Methods:", df_sequential['MappedMethod'].unique())
-print("CUDA Methods:", df_cuda['MappedMethod'].unique())
+# Loop through the sequential data
+for _, seq_row in sequential_df.iterrows():
+    width = seq_row['Width']
+    channels = seq_row['Channels']
+    method = seq_row['Method']
+    seq_time = seq_row['ExecutionTime(ms)']
+    
+    # Loop through the CUDA data to find the corresponding entry
+    for _, cuda_row in cuda_df_filtered.iterrows():
+        if cuda_row['Width'] == width and cuda_row['Channels'] == channels:
+            cuda_time = cuda_row['Time (ms)']
+            
+            # Calculate speedup
+            speedup = seq_time / cuda_time
+            
+            # Append the result to the list
+            results.append([speedup, width, channels, method])
+            break  # Found the matching entry, no need to loop further for this combination
 
-# Standardize key columns and ensure data types match
-for col in ['Width', 'Height', 'Channels']:
-    df_sequential[col] = df_sequential[col].astype(int)
-    df_cuda[col] = df_cuda[col].astype(int)
+# Create a DataFrame from the results
+results_df = pd.DataFrame(results, columns=['Speedup', 'Width', 'Channels', 'Method'])
 
-# Use MappedMethod for alignment
-columns_to_match = ['Width', 'Height', 'Channels', 'MappedMethod']
-df_sequential_matched = df_sequential.set_index(columns_to_match)
-df_cuda_matched = df_cuda.set_index(columns_to_match)
+# Create a plot
+plt.figure(figsize=(12, 7))
 
-# Align rows and calculate speedup
-common_index = df_sequential_matched.index.intersection(df_cuda_matched.index)
+# List of all methods to plot
+methods = ['OpenCV Grayscale', 'OpenCV Color', 'Manual Grayscale', 'Manual Color']
 
-if common_index.empty:
-    print("No common rows found. Check your data for inconsistencies!")
-else:
-    print("\nCommon Rows Found:")
-    print(common_index)
+# Define colors for each method for better distinction
+colors = ['b', 'g', 'r', 'c']
 
-# Calculate speedup
-speedup = (df_sequential_matched.loc[common_index, 'ExecutionTime(ms)'] /
-           df_cuda_matched.loc[common_index, 'ExecutionTime(ms)'])
+# Plot speedup curves for each method
+for method, color in zip(methods, colors):
+    method_df = results_df[results_df['Method'] == method]
+    method_df = method_df.sort_values('Width')  # Sort by Width to ensure the curve is plotted correctly
+    plt.plot(method_df['Width'], method_df['Speedup'], label=method, marker='o', markersize=8, color=color, linewidth=2)
 
-# Convert to DataFrame for plotting
-speedup_df = speedup.reset_index(name='Speedup')
+# Customize the plot
+plt.xlabel('Resolution (Width)', fontsize=14)
+plt.ylabel('Speedup', fontsize=14)
+plt.title('Speedup vs Resolution for Different Methods', fontsize=16)
+plt.legend(fontsize=12)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt.minorticks_on()  # Enable minor gridlines
+plt.tight_layout()
 
-# Debug: Print calculated speedup
-print("\nSpeedup Data:")
-print(speedup_df)
-
-# Plot the speedup if there's data
-if speedup_df.empty:
-    print("No speedup data to plot. Ensure your sequential and CUDA data files align correctly.")
-else:
-    # Plotting
-    plt.figure(figsize=(10, 6))
-    for method in speedup_df['MappedMethod'].unique():
-        method_data = speedup_df[speedup_df['MappedMethod'] == method]
-        plt.plot(method_data['Width'], method_data['Speedup'], marker='o', label=f'Method: {method}')
-
-    plt.title('Speedup Comparison')
-    plt.xlabel('Width (Pixels)')
-    plt.ylabel('Speedup')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+# Show the plot
+plt.show()

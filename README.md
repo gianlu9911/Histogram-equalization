@@ -13,14 +13,3 @@ This project implements histogram equalization for image processing using both s
 - **profiling/**: Directory containing profiling reports.
 
 
-## About execution_times.csv
-
-The `execution_times.csv` file contains the execution times for different image sizes and configurations. It is used to analyze and plot the performance of the sequential and CUDA implementations.
-
-### Columns
-
-- **Image Size**: The size of the image (e.g., 512x512, 1024x1024).
-- **Blocks**: The number of CUDA blocks used in the execution.
-- **Threads**: The number of CUDA threads per block.
-- **Execution Time**: The time taken to process the image in milliseconds.
-

@@ -11,12 +11,11 @@ int equalize_histogram_sequential(int size) {
 
     std::vector<std::tuple<int, int, int, std::string, double>> executionTimes;
 
-    // Load the original image
     cv::Mat originalImg = cv::imread(inputGrayPath);
 
     // Resize the image to the desired size (size x size dimensions)
-    int newSize = size; // Set the image size directly
-    if (newSize <= 0) return -1; // Ensure valid size
+    int newSize = size; 
+    if (newSize <= 0) return -1;
     cv::Mat resizedImg;
     cv::resize(originalImg, resizedImg, cv::Size(newSize, newSize)); // Resize image to (size, size)
 

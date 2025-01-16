@@ -25,47 +25,50 @@ __global__ void equalizeRGBImage(const unsigned char* d_image, unsigned char* d_
     const unsigned char* d_cdf_r, const unsigned char* d_cdf_g, const unsigned char* d_cdf_b,
     int tile_width, int tile_height)
 {
-// Calculate global thread coordinates
-int x = blockIdx.x * blockDim.x + threadIdx.x;
-int y = blockIdx.y * blockDim.y + threadIdx.y;
+    // Calculate global thread coordinates
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-// Allocate shared memory for a tile of the image
-__shared__ unsigned char tile_r[BLOCK_SIZE][BLOCK_SIZE];
-__shared__ unsigned char tile_g[BLOCK_SIZE][BLOCK_SIZE];
-__shared__ unsigned char tile_b[BLOCK_SIZE][BLOCK_SIZE];
+    // Allocate shared memory for a tile of the image dynamically based on tile size
+    extern __shared__ unsigned char shared_mem[];
 
-// Thread coordinates within the block
-int tx = threadIdx.x;
-int ty = threadIdx.y;
+    unsigned char* tile_r = shared_mem;
+    unsigned char* tile_g = &shared_mem[tile_width * tile_height];
+    unsigned char* tile_b = &shared_mem[tile_width * tile_height * 2];
 
-// Compute global pixel coordinates
-int global_x = blockIdx.x * blockDim.x + threadIdx.x;
-int global_y = blockIdx.y * blockDim.y + threadIdx.y;
+    // Thread coordinates within the block
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
 
-// Load the tile into shared memory
-if (global_x < width && global_y < height) {
-int idx = (global_y * width + global_x) * 3;
-tile_r[ty][tx] = d_image[idx];        // Red channel
-tile_g[ty][tx] = d_image[idx + 1];    // Green channel
-tile_b[ty][tx] = d_image[idx + 2];    // Blue channel
+    // Compute global pixel coordinates
+    int global_x = blockIdx.x * blockDim.x + threadIdx.x;
+    int global_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    // Load the tile into shared memory
+    if (global_x < width && global_y < height) {
+        int idx = (global_y * width + global_x) * 3;
+        tile_r[ty * tile_width + tx] = d_image[idx];        // Red channel
+        tile_g[ty * tile_width + tx] = d_image[idx + 1];    // Green channel
+        tile_b[ty * tile_width + tx] = d_image[idx + 2];    // Blue channel
+    }
+
+    __syncthreads();
+
+    // Perform the histogram equalization on the tile
+    if (global_x < width && global_y < height) {
+        int idx = (global_y * width + global_x) * 3;
+
+        // Apply the CDF to the corresponding channels
+        unsigned char r_eq = d_cdf_r[tile_r[ty * tile_width + tx]];
+        unsigned char g_eq = d_cdf_g[tile_g[ty * tile_width + tx]];
+        unsigned char b_eq = d_cdf_b[tile_b[ty * tile_width + tx]];
+
+        d_output[idx] = r_eq;
+        d_output[idx + 1] = g_eq;
+        d_output[idx + 2] = b_eq;
+    }
 }
 
-__syncthreads();
-
-// Perform the histogram equalization on the tile
-if (global_x < width && global_y < height) {
-int idx = (global_y * width + global_x) * 3;
-
-// Apply the CDF to the corresponding channels
-unsigned char r_eq = d_cdf_r[tile_r[ty][tx]];
-unsigned char g_eq = d_cdf_g[tile_g[ty][tx]];
-unsigned char b_eq = d_cdf_b[tile_b[ty][tx]];
-
-d_output[idx] = r_eq;
-d_output[idx + 1] = g_eq;
-d_output[idx + 2] = b_eq;
-}
-}
 
 __global__ void computeHistogram(const unsigned char* d_image, int* d_hist_r, int* d_hist_g, int* d_hist_b, int width, int height)
 {
@@ -166,8 +169,10 @@ __global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned ch
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    // Allocate shared memory for a tile of the image
-    __shared__ unsigned char tile[BLOCK_SIZE][BLOCK_SIZE];
+    // Allocate shared memory for a tile of the image dynamically based on tile size
+    extern __shared__ unsigned char shared_mem[];
+
+    unsigned char* tile = shared_mem; // Shared memory for grayscale tile
 
     // Thread coordinates within the block
     int tx = threadIdx.x;
@@ -180,7 +185,7 @@ __global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned ch
     // Load the tile into shared memory
     if (global_x < width && global_y < height) {
         int idx = global_y * width + global_x;
-        tile[ty][tx] = d_image[idx];  // Grayscale channel
+        tile[ty * tile_width + tx] = d_image[idx];  // Grayscale channel
     }
 
     // Synchronize to make sure all threads have loaded their tile into shared memory
@@ -191,9 +196,10 @@ __global__ void equalizeGrayscaleImage(const unsigned char* d_image, unsigned ch
         int idx = global_y * width + global_x;
 
         // Apply the CDF to the pixel
-        unsigned char eq_value = d_cdf[tile[ty][tx]];
+        unsigned char eq_value = d_cdf[tile[ty * tile_width + tx]];
 
         // Store the equalized pixel in the output image
         d_output[idx] = eq_value;
     }
 }
+

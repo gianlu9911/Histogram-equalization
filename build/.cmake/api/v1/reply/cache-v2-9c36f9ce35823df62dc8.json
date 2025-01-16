@@ -55,7 +55,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization/build"
+			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -519,7 +519,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization/build/CMakeFiles/pkgRedirects"
+			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -579,7 +579,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization"
+			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -1143,7 +1143,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization/build"
+			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build"
 		},
 		{
 			"name" : "Histogram_Equalization_IS_TOP_LEVEL",
@@ -1167,7 +1167,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-Equalization/Histogram-equalization"
+			"value" : "/home/sangi/my_programs/parallel_computing/Histogram-equalization"
 		},
 		{
 			"name" : "OpenCV_DIR",

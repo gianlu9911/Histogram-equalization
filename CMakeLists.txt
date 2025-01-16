@@ -31,6 +31,10 @@ set(CUDA_SOURCE_FILES
     cuda_main.cu                # CUDA implementation entry point
 )
 
+set(ONE_D_CUDA_EQUALIZATION_SOURCE_FILES
+    1d_cuda_equalization.cu     # 1D CUDA equalization implementation
+)
+
 # Add the sequential executable
 add_executable(histogram_sequential ${SEQUENTIAL_SOURCE_FILES})
 set_target_properties(histogram_sequential PROPERTIES
@@ -44,9 +48,17 @@ set_target_properties(histogram_cuda PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
+# Add the 1D CUDA equalization executable
+add_executable(1DCudaEqualization ${ONE_D_CUDA_EQUALIZATION_SOURCE_FILES})
+set_target_properties(1DCudaEqualization PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+)
+
 # Link OpenCV to the executables
 target_link_libraries(histogram_sequential PRIVATE ${OpenCV_LIBS})
 target_link_libraries(histogram_cuda PRIVATE ${OpenCV_LIBS})
+target_link_libraries(1DCudaEqualization PRIVATE ${OpenCV_LIBS})
 
 # Set build type to Release by default and enable optimizations
 if(NOT CMAKE_BUILD_TYPE)
@@ -61,8 +73,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 
     # Enable specific optimizations for CUDA
     target_compile_options(histogram_cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3 -gencode=arch=compute_86,code=sm_86 -Xcompiler=-flto -Xcompiler=-funroll-loops>)
+    target_compile_options(1DCudaEqualization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3 -gencode=arch=compute_86,code=sm_86 -Xcompiler=-flto -Xcompiler=-funroll-loops>)
     
     # Additional optimizations for C++
     target_compile_options(histogram_sequential PRIVATE -O3 -march=native -flto -funroll-loops)
 endif()
-

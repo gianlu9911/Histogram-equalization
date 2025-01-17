@@ -120,50 +120,50 @@ build histogram_cuda: CUDA_EXECUTABLE_LINKER__histogram_cuda_Debug CMakeFiles/hi
   TARGET_PDB = histogram_cuda.dbg
 
 # =============================================================================
-# Object build statements for EXECUTABLE target 1DCudaEqualization
+# Object build statements for EXECUTABLE target CudaVariation
 
 
 #############################################
-# Order-only phony target for 1DCudaEqualization
+# Order-only phony target for CudaVariation
 
-build cmake_object_order_depends_target_1DCudaEqualization: phony || CMakeFiles/1DCudaEqualization.dir
+build cmake_object_order_depends_target_CudaVariation: phony || CMakeFiles/CudaVariation.dir
 
-build CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o: CUDA_COMPILER__1DCudaEqualization_unscanned_Debug /home/sangi/my_programs/parallel_computing/Histogram-equalization/1d_cuda_equalization.cu || cmake_object_order_depends_target_1DCudaEqualization
-  DEP_FILE = CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o.d
+build CMakeFiles/CudaVariation.dir/cuda_variation.cu.o: CUDA_COMPILER__CudaVariation_unscanned_Debug /home/sangi/my_programs/parallel_computing/Histogram-equalization/cuda_variation.cu || cmake_object_order_depends_target_CudaVariation
+  DEP_FILE = CMakeFiles/CudaVariation.dir/cuda_variation.cu.o.d
   FLAGS = -g -std=c++17 "--generate-code=arch=compute_86,code=[compute_86,sm_86]" -Xcompiler=-fPIE
   INCLUDES = -I/home/sangi/my_programs/parallel_computing/Histogram-equalization/include -isystem /usr/local/include/opencv4
-  OBJECT_DIR = CMakeFiles/1DCudaEqualization.dir
-  OBJECT_FILE_DIR = CMakeFiles/1DCudaEqualization.dir
+  OBJECT_DIR = CMakeFiles/CudaVariation.dir
+  OBJECT_FILE_DIR = CMakeFiles/CudaVariation.dir
 
 
 # =============================================================================
-# Device Link build statements for EXECUTABLE target 1DCudaEqualization
+# Device Link build statements for EXECUTABLE target CudaVariation
 
 
 #############################################
-# Link the executable CMakeFiles/1DCudaEqualization.dir/cmake_device_link.o
+# Link the executable CMakeFiles/CudaVariation.dir/cmake_device_link.o
 
-build CMakeFiles/1DCudaEqualization.dir/cmake_device_link.o: CUDA_EXECUTABLE_DEVICE_LINKER__1DCudaEqualization_Debug CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o | /usr/local/lib/libopencv_gapi.so.4.11.0 /usr/local/lib/libopencv_highgui.so.4.11.0 /usr/local/lib/libopencv_ml.so.4.11.0 /usr/local/lib/libopencv_objdetect.so.4.11.0 /usr/local/lib/libopencv_photo.so.4.11.0 /usr/local/lib/libopencv_stitching.so.4.11.0 /usr/local/lib/libopencv_video.so.4.11.0 /usr/local/lib/libopencv_videoio.so.4.11.0 /usr/local/lib/libopencv_imgcodecs.so.4.11.0 /usr/local/lib/libopencv_dnn.so.4.11.0 /usr/local/lib/libopencv_calib3d.so.4.11.0 /usr/local/lib/libopencv_features2d.so.4.11.0 /usr/local/lib/libopencv_flann.so.4.11.0 /usr/local/lib/libopencv_imgproc.so.4.11.0 /usr/local/lib/libopencv_core.so.4.11.0
+build CMakeFiles/CudaVariation.dir/cmake_device_link.o: CUDA_EXECUTABLE_DEVICE_LINKER__CudaVariation_Debug CMakeFiles/CudaVariation.dir/cuda_variation.cu.o | /usr/local/lib/libopencv_gapi.so.4.11.0 /usr/local/lib/libopencv_highgui.so.4.11.0 /usr/local/lib/libopencv_ml.so.4.11.0 /usr/local/lib/libopencv_objdetect.so.4.11.0 /usr/local/lib/libopencv_photo.so.4.11.0 /usr/local/lib/libopencv_stitching.so.4.11.0 /usr/local/lib/libopencv_video.so.4.11.0 /usr/local/lib/libopencv_videoio.so.4.11.0 /usr/local/lib/libopencv_imgcodecs.so.4.11.0 /usr/local/lib/libopencv_dnn.so.4.11.0 /usr/local/lib/libopencv_calib3d.so.4.11.0 /usr/local/lib/libopencv_features2d.so.4.11.0 /usr/local/lib/libopencv_flann.so.4.11.0 /usr/local/lib/libopencv_imgproc.so.4.11.0 /usr/local/lib/libopencv_core.so.4.11.0
   LANGUAGE_COMPILE_FLAGS = -g "--generate-code=arch=compute_86,code=[compute_86,sm_86]"
   LINK_LIBRARIES = -lcudadevrt -lcudart_static -lrt -lpthread -ldl
-  OBJECT_DIR = CMakeFiles/1DCudaEqualization.dir
-  TARGET_FILE = CMakeFiles/1DCudaEqualization.dir/cmake_device_link.o
+  OBJECT_DIR = CMakeFiles/CudaVariation.dir
+  TARGET_FILE = CMakeFiles/CudaVariation.dir/cmake_device_link.o
 
 # =============================================================================
-# Link build statements for EXECUTABLE target 1DCudaEqualization
+# Link build statements for EXECUTABLE target CudaVariation
 
 
 #############################################
-# Link the executable 1DCudaEqualization
+# Link the executable CudaVariation
 
-build 1DCudaEqualization: CUDA_EXECUTABLE_LINKER__1DCudaEqualization_Debug CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o CMakeFiles/1DCudaEqualization.dir/cmake_device_link.o | /usr/local/lib/libopencv_gapi.so.4.11.0 /usr/local/lib/libopencv_highgui.so.4.11.0 /usr/local/lib/libopencv_ml.so.4.11.0 /usr/local/lib/libopencv_objdetect.so.4.11.0 /usr/local/lib/libopencv_photo.so.4.11.0 /usr/local/lib/libopencv_stitching.so.4.11.0 /usr/local/lib/libopencv_video.so.4.11.0 /usr/local/lib/libopencv_videoio.so.4.11.0 /usr/local/lib/libopencv_imgcodecs.so.4.11.0 /usr/local/lib/libopencv_dnn.so.4.11.0 /usr/local/lib/libopencv_calib3d.so.4.11.0 /usr/local/lib/libopencv_features2d.so.4.11.0 /usr/local/lib/libopencv_flann.so.4.11.0 /usr/local/lib/libopencv_imgproc.so.4.11.0 /usr/local/lib/libopencv_core.so.4.11.0
+build CudaVariation: CUDA_EXECUTABLE_LINKER__CudaVariation_Debug CMakeFiles/CudaVariation.dir/cuda_variation.cu.o CMakeFiles/CudaVariation.dir/cmake_device_link.o | /usr/local/lib/libopencv_gapi.so.4.11.0 /usr/local/lib/libopencv_highgui.so.4.11.0 /usr/local/lib/libopencv_ml.so.4.11.0 /usr/local/lib/libopencv_objdetect.so.4.11.0 /usr/local/lib/libopencv_photo.so.4.11.0 /usr/local/lib/libopencv_stitching.so.4.11.0 /usr/local/lib/libopencv_video.so.4.11.0 /usr/local/lib/libopencv_videoio.so.4.11.0 /usr/local/lib/libopencv_imgcodecs.so.4.11.0 /usr/local/lib/libopencv_dnn.so.4.11.0 /usr/local/lib/libopencv_calib3d.so.4.11.0 /usr/local/lib/libopencv_features2d.so.4.11.0 /usr/local/lib/libopencv_flann.so.4.11.0 /usr/local/lib/libopencv_imgproc.so.4.11.0 /usr/local/lib/libopencv_core.so.4.11.0
   FLAGS = -g "--generate-code=arch=compute_86,code=[compute_86,sm_86]"
   LINK_LIBRARIES = -Wl,-rpath,/usr/local/lib  /usr/local/lib/libopencv_gapi.so.4.11.0  /usr/local/lib/libopencv_highgui.so.4.11.0  /usr/local/lib/libopencv_ml.so.4.11.0  /usr/local/lib/libopencv_objdetect.so.4.11.0  /usr/local/lib/libopencv_photo.so.4.11.0  /usr/local/lib/libopencv_stitching.so.4.11.0  /usr/local/lib/libopencv_video.so.4.11.0  /usr/local/lib/libopencv_videoio.so.4.11.0  /usr/local/lib/libopencv_imgcodecs.so.4.11.0  /usr/local/lib/libopencv_dnn.so.4.11.0  /usr/local/lib/libopencv_calib3d.so.4.11.0  /usr/local/lib/libopencv_features2d.so.4.11.0  /usr/local/lib/libopencv_flann.so.4.11.0  /usr/local/lib/libopencv_imgproc.so.4.11.0  /usr/local/lib/libopencv_core.so.4.11.0  -lcudadevrt  -lcudart_static  -lrt  -lpthread  -ldl
-  OBJECT_DIR = CMakeFiles/1DCudaEqualization.dir
+  OBJECT_DIR = CMakeFiles/CudaVariation.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_FILE = 1DCudaEqualization
-  TARGET_PDB = 1DCudaEqualization.dbg
+  TARGET_FILE = CudaVariation
+  TARGET_PDB = CudaVariation.dbg
 
 
 #############################################
@@ -199,7 +199,7 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 #############################################
 # Folder: /home/sangi/my_programs/parallel_computing/Histogram-equalization/build
 
-build all: phony histogram_sequential histogram_cuda 1DCudaEqualization
+build all: phony histogram_sequential histogram_cuda CudaVariation
 
 # =============================================================================
 # Built-in targets

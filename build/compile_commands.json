@@ -13,8 +13,8 @@
 },
 {
   "directory": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/build",
-  "command": "/usr/bin/nvcc -forward-unknown-to-host-compiler -I/home/sangi/my_programs/parallel_computing/Histogram-equalization/include -isystem /usr/local/include/opencv4 -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -Xcompiler=-fPIE -x cu -rdc=true -c /home/sangi/my_programs/parallel_computing/Histogram-equalization/1d_cuda_equalization.cu -o CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o",
-  "file": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/1d_cuda_equalization.cu",
-  "output": "CMakeFiles/1DCudaEqualization.dir/1d_cuda_equalization.cu.o"
+  "command": "/usr/bin/nvcc -forward-unknown-to-host-compiler -I/home/sangi/my_programs/parallel_computing/Histogram-equalization/include -isystem /usr/local/include/opencv4 -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -Xcompiler=-fPIE -x cu -rdc=true -c /home/sangi/my_programs/parallel_computing/Histogram-equalization/cuda_variation.cu -o CMakeFiles/CudaVariation.dir/cuda_variation.cu.o",
+  "file": "/home/sangi/my_programs/parallel_computing/Histogram-equalization/cuda_variation.cu",
+  "output": "CMakeFiles/CudaVariation.dir/cuda_variation.cu.o"
 }
 ]

@@ -1,5 +1,5 @@
 /home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/histogram_sequential.dir
 /home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/histogram_cuda.dir
-/home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/1DCudaEqualization.dir
+/home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/CudaVariation.dir
 /home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/edit_cache.dir
 /home/sangi/my_programs/parallel_computing/Histogram-equalization/build/CMakeFiles/rebuild_cache.dir

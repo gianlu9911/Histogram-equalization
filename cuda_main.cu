@@ -262,13 +262,13 @@ void equalizeImageWithCUDA(const cv::Mat& inputImage, int tile_width, int tile_h
 
 
 int main() {
-    cv::Mat inputImageGray = cv::imread("../images/img2.bmp", cv::IMREAD_GRAYSCALE);
+    cv::Mat inputImageGray = cv::imread("images/img2.bmp", cv::IMREAD_GRAYSCALE);
     if (inputImageGray.empty()) {
         std::cerr << "Error: Could not load grayscale image!" << std::endl;
         return -1;
     }
 
-    cv::Mat inputImageColor = cv::imread("../images/img2.bmp", cv::IMREAD_COLOR);
+    cv::Mat inputImageColor = cv::imread("images/img2.bmp", cv::IMREAD_COLOR);
     if (inputImageColor.empty()) {
         std::cerr << "Error: Could not load color image!" << std::endl;
         return -1;
@@ -285,10 +285,10 @@ int main() {
         cv::resize(inputImageColor, resizedColor, cv::Size(size, size));
 
         std::cout << "Processing grayscale image at resolution: " << size << "x" << size << std::endl;
-        equalizeImageWithCUDAGrayscale(resizedGray, 16,16);
+        equalizeImageWithCUDAGrayscale(resizedGray, 32,32);
 
         std::cout << "Processing color image at resolution: " << size << "x" << size << std::endl;
-        equalizeImageWithCUDA(resizedColor, 16,16);
+        equalizeImageWithCUDA(resizedColor, 32,32);
     }
 
     return 0;

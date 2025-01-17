@@ -42,9 +42,9 @@
 			[
 				{
 					"directoryIndex" : 0,
-					"id" : "1DCudaEqualization::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-1DCudaEqualization-Debug-2b4697e5eee883b1c7e2.json",
-					"name" : "1DCudaEqualization",
+					"id" : "CudaVariation::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CudaVariation-Debug-c194402f355400d72074.json",
+					"name" : "CudaVariation",
 					"projectIndex" : 0
 				},
 				{

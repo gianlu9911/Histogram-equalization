@@ -639,3 +639,251 @@ Histogram computation,0.361472,2048,2048,3,16,16
 CDF computation,0.033792,2048,2048,3,16,16
 Equalization,0.124928,2048,2048,3,16,16
 Total execution,0.766976,2048,2048,3,16,16
+Histogram computation,0.013312,128,128,1,16,16
+CDF computation,0.017408,128,128,1,16,16
+Equalization,0.012288,128,128,1,16,16
+Total execution,10.7264,128,128,1,16,16
+Histogram computation,0,128,128,3,16,16
+CDF computation,0,128,128,3,16,16
+Equalization,0,128,128,3,16,16
+Total execution,0,128,128,3,16,16
+Histogram computation,0.017408,128,128,1,16,16
+CDF computation,0.017408,128,128,1,16,16
+Equalization,0.017408,128,128,1,16,16
+Total execution,10.8718,128,128,1,16,16
+Histogram computation,0.06848,128,128,3,16,16
+CDF computation,0.033792,128,128,3,16,16
+Equalization,0.217088,128,128,3,16,16
+Total execution,0.659488,128,128,3,16,16
+Histogram computation,0.01536,256,256,1,16,16
+CDF computation,0.023552,256,256,1,16,16
+Equalization,0.02048,256,256,1,16,16
+Total execution,0.329728,256,256,1,16,16
+Histogram computation,0.016384,256,256,3,16,16
+CDF computation,0.128,256,256,3,16,16
+Equalization,0.017312,256,256,3,16,16
+Total execution,0.391168,256,256,3,16,16
+Histogram computation,0.026624,512,512,1,16,16
+CDF computation,0.023552,512,512,1,16,16
+Equalization,0.009216,512,512,1,16,16
+Total execution,0.258048,512,512,1,16,16
+Histogram computation,0.027648,512,512,3,16,16
+CDF computation,0.038912,512,512,3,16,16
+Equalization,0.02048,512,512,3,16,16
+Total execution,0.428032,512,512,3,16,16
+Histogram computation,0.090112,1024,1024,1,16,16
+CDF computation,0.019456,1024,1024,1,16,16
+Equalization,0.020352,1024,1024,1,16,16
+Total execution,0.44544,1024,1024,1,16,16
+Histogram computation,0.096224,1024,1024,3,16,16
+CDF computation,0.033792,1024,1024,3,16,16
+Equalization,0.045056,1024,1024,3,16,16
+Total execution,0.557184,1024,1024,3,16,16
+Histogram computation,0.34304,2048,2048,1,16,16
+CDF computation,0.011264,2048,2048,1,16,16
+Equalization,0.069632,2048,2048,1,16,16
+Total execution,0.91136,2048,2048,1,16,16
+Histogram computation,0.350208,2048,2048,3,16,16
+CDF computation,0.09216,2048,2048,3,16,16
+Equalization,0.144384,2048,2048,3,16,16
+Total execution,1.13162,2048,2048,3,16,16
+Histogram computation,0.064512,128,128,1,16,16
+CDF computation,0.063488,128,128,1,16,16
+Equalization,0.043008,128,128,1,16,16
+Total execution,2.11251,128,128,1,16,16
+Histogram computation,0.031744,256,256,1,16,16
+CDF computation,0.013312,256,256,1,16,16
+Equalization,0.008192,256,256,1,16,16
+Total execution,0.346112,256,256,1,16,16
+Histogram computation,0.027648,512,512,1,16,16
+CDF computation,0.013312,512,512,1,16,16
+Equalization,0.011264,512,512,1,16,16
+Total execution,0.355328,512,512,1,16,16
+Histogram computation,0.119808,1024,1024,1,16,16
+CDF computation,0.014336,1024,1024,1,16,16
+Equalization,0.019456,1024,1024,1,16,16
+Total execution,0.60928,1024,1024,1,16,16
+Histogram computation,0.349184,2048,2048,1,16,16
+CDF computation,0.034816,2048,2048,1,16,16
+Equalization,0.069632,2048,2048,1,16,16
+Total execution,0.806912,2048,2048,1,16,16
+Histogram computation,0.01536,128,128,1,16,16
+CDF computation,0.019456,128,128,1,16,16
+Equalization,0.063616,128,128,1,16,16
+Total execution,0.580608,128,128,1,16,16
+Histogram computation,0.011264,256,256,1,16,16
+CDF computation,0.018432,256,256,1,16,16
+Equalization,0.021504,256,256,1,16,16
+Total execution,0.781312,256,256,1,16,16
+Histogram computation,0.027648,512,512,1,16,16
+CDF computation,0.013312,512,512,1,16,16
+Equalization,0.01024,512,512,1,16,16
+Total execution,0.241664,512,512,1,16,16
+Histogram computation,0.094208,1024,1024,1,16,16
+CDF computation,0.019456,1024,1024,1,16,16
+Equalization,0.043008,1024,1024,1,16,16
+Total execution,0.658432,1024,1024,1,16,16
+Histogram computation,0.367616,2048,2048,1,16,16
+CDF computation,0.019456,2048,2048,1,16,16
+Equalization,0.069632,2048,2048,1,16,16
+Total execution,0.99328,2048,2048,1,16,16
+Histogram computation,0.077824,128,128,1,16,16
+CDF computation,0.016384,128,128,1,16,16
+Equalization,0.039936,128,128,1,16,16
+Total execution,11.4729,128,128,1,16,16
+Histogram computation,0.036864,128,128,3,16,16
+CDF computation,0.036864,128,128,3,16,16
+Equalization,0.022528,128,128,3,16,16
+Total execution,0.454656,128,128,3,16,16
+Histogram computation,0.022528,256,256,1,16,16
+CDF computation,0.016384,256,256,1,16,16
+Equalization,0.01024,256,256,1,16,16
+Total execution,0.257024,256,256,1,16,16
+Histogram computation,0.01536,256,256,3,16,16
+CDF computation,0.033792,256,256,3,16,16
+Equalization,0.016352,256,256,3,16,16
+Total execution,0.467968,256,256,3,16,16
+Histogram computation,0.027648,512,512,1,16,16
+CDF computation,0.016384,512,512,1,16,16
+Equalization,0.011264,512,512,1,16,16
+Total execution,0.261184,512,512,1,16,16
+Histogram computation,0.031744,512,512,3,16,16
+CDF computation,0.036864,512,512,3,16,16
+Equalization,0.018432,512,512,3,16,16
+Total execution,0.456704,512,512,3,16,16
+Histogram computation,0.09216,1024,1024,1,16,16
+CDF computation,0.01536,1024,1024,1,16,16
+Equalization,0.024576,1024,1024,1,16,16
+Total execution,0.999424,1024,1024,1,16,16
+Histogram computation,0.11264,1024,1024,3,16,16
+CDF computation,0.032768,1024,1024,3,16,16
+Equalization,0.037888,1024,1024,3,16,16
+Total execution,0.51712,1024,1024,3,16,16
+Histogram computation,0.34816,2048,2048,1,16,16
+CDF computation,0.012288,2048,2048,1,16,16
+Equalization,0.0768,2048,2048,1,16,16
+Total execution,1.00762,2048,2048,1,16,16
+Histogram computation,0.35328,2048,2048,3,16,16
+CDF computation,0.033792,2048,2048,3,16,16
+Equalization,0.126976,2048,2048,3,16,16
+Total execution,1.35885,2048,2048,3,16,16
+Histogram computation,0.098304,128,128,1,16,16
+CDF computation,0.023552,128,128,1,16,16
+Equalization,0.080896,128,128,1,16,16
+Total execution,0.647136,128,128,1,16,16
+Histogram computation,0.0256,128,128,3,16,16
+CDF computation,0.032768,128,128,3,16,16
+Equalization,0.016384,128,128,3,16,16
+Total execution,0.265216,128,128,3,16,16
+Histogram computation,0.011264,256,256,1,16,16
+CDF computation,0.018432,256,256,1,16,16
+Equalization,0.008192,256,256,1,16,16
+Total execution,0.29184,256,256,1,16,16
+Histogram computation,0.012128,256,256,3,16,16
+CDF computation,0.037888,256,256,3,16,16
+Equalization,0.01024,256,256,3,16,16
+Total execution,0.328704,256,256,3,16,16
+Histogram computation,0.029696,512,512,1,16,16
+CDF computation,0.013312,512,512,1,16,16
+Equalization,0.01024,512,512,1,16,16
+Total execution,0.852992,512,512,1,16,16
+Histogram computation,0.027648,512,512,3,16,16
+CDF computation,0.038848,512,512,3,16,16
+Equalization,0.016384,512,512,3,16,16
+Total execution,0.345088,512,512,3,16,16
+Histogram computation,0.094144,1024,1024,1,16,16
+CDF computation,0.013312,1024,1024,1,16,16
+Equalization,0.021504,1024,1024,1,16,16
+Total execution,0.45568,1024,1024,1,16,16
+Histogram computation,0.09408,1024,1024,3,16,16
+CDF computation,0.06144,1024,1024,3,16,16
+Equalization,0.037888,1024,1024,3,16,16
+Total execution,0.423008,1024,1024,3,16,16
+Histogram computation,0.356352,2048,2048,1,16,16
+CDF computation,0.01536,2048,2048,1,16,16
+Equalization,0.074752,2048,2048,1,16,16
+Total execution,0.864256,2048,2048,1,16,16
+Histogram computation,0.35328,2048,2048,3,16,16
+CDF computation,0.031744,2048,2048,3,16,16
+Equalization,0.128,2048,2048,3,16,16
+Total execution,0.805888,2048,2048,3,16,16
+Histogram computation,0.014336,128,128,1,16,16
+CDF computation,0.018432,128,128,1,16,16
+Equalization,0.013312,128,128,1,16,16
+Total execution,1.45408,128,128,1,16,16
+Histogram computation,0.013312,128,128,3,16,16
+CDF computation,0.031744,128,128,3,16,16
+Equalization,0.013312,128,128,3,16,16
+Total execution,3.19181,128,128,3,16,16
+Histogram computation,0.070656,256,256,1,16,16
+CDF computation,0.012288,256,256,1,16,16
+Equalization,0.007168,256,256,1,16,16
+Total execution,1.71622,256,256,1,16,16
+Histogram computation,0.013312,256,256,3,16,16
+CDF computation,0.038912,256,256,3,16,16
+Equalization,0.038912,256,256,3,16,16
+Total execution,0.333824,256,256,3,16,16
+Histogram computation,0.029696,512,512,1,16,16
+CDF computation,0.01536,512,512,1,16,16
+Equalization,0.016384,512,512,1,16,16
+Total execution,0.33792,512,512,1,16,16
+Histogram computation,0.038912,512,512,3,16,16
+CDF computation,0.043008,512,512,3,16,16
+Equalization,0.031744,512,512,3,16,16
+Total execution,0.66048,512,512,3,16,16
+Histogram computation,0.093184,1024,1024,1,16,16
+CDF computation,0.013312,1024,1024,1,16,16
+Equalization,0.02048,1024,1024,1,16,16
+Total execution,1.02912,1024,1024,1,16,16
+Histogram computation,0.1536,1024,1024,3,16,16
+CDF computation,0.032768,1024,1024,3,16,16
+Equalization,0.171008,1024,1024,3,16,16
+Total execution,1.91795,1024,1024,3,16,16
+Histogram computation,0.359424,2048,2048,1,16,16
+CDF computation,0.019456,2048,2048,1,16,16
+Equalization,0.247808,2048,2048,1,16,16
+Total execution,2.23744,2048,2048,1,16,16
+Histogram computation,0.416768,2048,2048,3,16,16
+CDF computation,0.044032,2048,2048,3,16,16
+Equalization,0.69632,2048,2048,3,16,16
+Total execution,2.00397,2048,2048,3,16,16
+Histogram computation,0.014336,128,128,1,16,16
+CDF computation,0.018432,128,128,1,16,16
+Equalization,0.01536,128,128,1,16,16
+Total execution,1.92717,128,128,1,16,16
+Histogram computation,0.01536,128,128,3,16,16
+CDF computation,0.032768,128,128,3,16,16
+Equalization,0.013312,128,128,3,16,16
+Total execution,2.36237,128,128,3,16,16
+Histogram computation,0.011264,256,256,1,16,16
+CDF computation,0.012288,256,256,1,16,16
+Equalization,0.007168,256,256,1,16,16
+Total execution,2.74637,256,256,1,16,16
+Histogram computation,0.026624,256,256,3,16,16
+CDF computation,0.043008,256,256,3,16,16
+Equalization,0.022528,256,256,3,16,16
+Total execution,0.963584,256,256,3,16,16
+Histogram computation,0.038912,512,512,1,16,16
+CDF computation,0.0256,512,512,1,16,16
+Equalization,0.018432,512,512,1,16,16
+Total execution,0.86016,512,512,1,16,16
+Histogram computation,0.039936,512,512,3,16,16
+CDF computation,0.041984,512,512,3,16,16
+Equalization,0.022528,512,512,3,16,16
+Total execution,1.0455,512,512,3,16,16
+Histogram computation,0.136192,1024,1024,1,16,16
+CDF computation,0.014336,1024,1024,1,16,16
+Equalization,0.029696,1024,1024,1,16,16
+Total execution,1.93946,1024,1024,1,16,16
+Histogram computation,0.13824,1024,1024,3,16,16
+CDF computation,0.041984,1024,1024,3,16,16
+Equalization,0.15872,1024,1024,3,16,16
+Total execution,1.14074,1024,1024,3,16,16
+Histogram computation,0.355328,2048,2048,1,16,16
+CDF computation,0.023552,2048,2048,1,16,16
+Equalization,0.273408,2048,2048,1,16,16
+Total execution,1.36499,2048,2048,1,16,16
+Histogram computation,0.412672,2048,2048,3,16,16
+CDF computation,0.047104,2048,2048,3,16,16
+Equalization,0.697344,2048,2048,3,16,16
+Total execution,2.37773,2048,2048,3,16,16

@@ -1,7 +1,5 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
-#include <thrust/device_vector.h>
-#include <thrust/scan.h>
 #include <iostream>
 
 #define HISTOGRAM_SIZE 256
@@ -17,13 +15,12 @@ __global__ void warmup_kernel() {
     }
 }
 
-// Kernel to calculate the histogram of the image with shared memory reduction
-__global__ void calculate_histogram(unsigned char* d_image, int* d_histogram, int rows, int cols) {
+__global__ void calculate_histogram_tiled(unsigned char* d_image, int* d_histogram, int rows, int cols) {
     __shared__ int local_histogram[HISTOGRAM_SIZE];  // Shared memory for local histogram
+    int x = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int y = blockIdx.y * TILE_SIZE + threadIdx.y;
 
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
+    // Initialize local histogram to zero
     if (threadIdx.x == 0 && threadIdx.y == 0) {
         for (int i = 0; i < HISTOGRAM_SIZE; i++) {
             local_histogram[i] = 0;
@@ -31,16 +28,48 @@ __global__ void calculate_histogram(unsigned char* d_image, int* d_histogram, in
     }
     __syncthreads();
 
+    // Process a tile of the image
     if (x < cols && y < rows) {
-        atomicAdd(&local_histogram[d_image[y * cols + x]], 1);
+        unsigned char val = d_image[y * cols + x];
+        atomicAdd(&local_histogram[val], 1);  // Increment local histogram for this pixel value
     }
-
     __syncthreads();
 
+    // Write the results of the local histogram back to global memory
     if (threadIdx.x == 0 && threadIdx.y == 0) {
         for (int i = 0; i < HISTOGRAM_SIZE; i++) {
             atomicAdd(&d_histogram[i], local_histogram[i]);
         }
+    }
+}
+
+
+// Prefix sum kernel to calculate the CDF of the histogram
+__global__ void prefix_sum_kernel(int* d_histogram, int* d_cdf, int size) {
+    __shared__ int temp[HISTOGRAM_SIZE];  // Shared memory to hold the histogram
+
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int thread_id = threadIdx.x;
+
+    if (idx < size) {
+        temp[thread_id] = d_histogram[idx];
+    } else {
+        temp[thread_id] = 0;
+    }
+
+    __syncthreads();
+
+    // Perform prefix sum (scan) in shared memory
+    for (int offset = 1; offset < blockDim.x; offset *= 2) {
+        if (thread_id >= offset) {
+            temp[thread_id] += temp[thread_id - offset];
+        }
+        __syncthreads();
+    }
+
+    // Write the result back to the global memory
+    if (idx < size) {
+        d_cdf[idx] = temp[thread_id];
     }
 }
 
@@ -66,8 +95,7 @@ __global__ void histogram_equalization_tiled(unsigned char* d_image, int* d_cdf,
         d_image[y * cols + x] = tile[threadIdx.y][threadIdx.x];
     }
 }
-
-void histogram_equalization_cuda(Mat& img) {
+void histogram_equalization_cuda(cv::Mat& img) {
     int rows = img.rows, cols = img.cols;
     int img_size = rows * cols;
     int* h_histogram;
@@ -79,9 +107,13 @@ void histogram_equalization_cuda(Mat& img) {
     cudaHostAlloc((void**)&h_cdf, HISTOGRAM_SIZE * sizeof(int), cudaHostAllocDefault);
     memcpy(h_pinned_image, img.data, img_size * sizeof(unsigned char));
 
-    thrust::device_vector<unsigned char> d_image(h_pinned_image, h_pinned_image + img_size);
-    thrust::device_vector<int> d_histogram(HISTOGRAM_SIZE, 0);
-    thrust::device_vector<int> d_cdf(HISTOGRAM_SIZE, 0);
+    int* d_histogram;
+    int* d_cdf;
+    unsigned char* d_image;
+
+    cudaMalloc((void**)&d_image, img_size * sizeof(unsigned char));
+    cudaMalloc((void**)&d_histogram, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc((void**)&d_cdf, HISTOGRAM_SIZE * sizeof(int));
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -89,6 +121,15 @@ void histogram_equalization_cuda(Mat& img) {
 
     // Record total start time
     cudaEventRecord(start);
+
+    // Memory transfer from host to device (image)
+    cudaEventRecord(start);
+    cudaMemcpy(d_image, h_pinned_image, img_size * sizeof(unsigned char), cudaMemcpyHostToDevice);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float mem_transfer_time;
+    cudaEventElapsedTime(&mem_transfer_time, start, stop);
+    std::cout << "Memory Transfer Time (Host to Device): " << mem_transfer_time << " ms." << std::endl;
 
     // Warm-up kernel
     cudaEventRecord(start);
@@ -103,24 +144,26 @@ void histogram_equalization_cuda(Mat& img) {
     cudaEventRecord(start);
     dim3 block(32, 32);
     dim3 grid((cols + block.x - 1) / block.x, (rows + block.y - 1) / block.y);
-    calculate_histogram<<<grid, block>>>(thrust::raw_pointer_cast(d_image.data()), thrust::raw_pointer_cast(d_histogram.data()), rows, cols);
+    calculate_histogram_tiled<<<grid, block>>>(d_image, d_histogram, rows, cols);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float histogram_time;
     cudaEventElapsedTime(&histogram_time, start, stop);
     std::cout << "Histogram Calculation Time: " << histogram_time << " ms." << std::endl;
 
-    // CDF Computation
+    // CDF Computation using Prefix Sum
     cudaEventRecord(start);
-    thrust::inclusive_scan(d_histogram.begin(), d_histogram.end(), d_cdf.begin());
+    int block_size = 256;
+    int grid_size = (HISTOGRAM_SIZE + block_size - 1) / block_size;
+    prefix_sum_kernel<<<grid_size, block_size>>>(d_histogram, d_cdf, HISTOGRAM_SIZE);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float cdf_time;
     cudaEventElapsedTime(&cdf_time, start, stop);
-    std::cout << "CDF Computation Time: " << cdf_time << " ms." << std::endl;
+    std::cout << "CDF Computation Time (Prefix Sum): " << cdf_time << " ms." << std::endl;
 
     // Copy CDF data from device to host
-    thrust::copy(d_cdf.begin(), d_cdf.end(), h_cdf);
+    cudaMemcpy(h_cdf, d_cdf, HISTOGRAM_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
     int cdf_min = *std::min_element(h_cdf, h_cdf + HISTOGRAM_SIZE);
     int cdf_max = h_cdf[HISTOGRAM_SIZE - 1];
 
@@ -134,16 +177,29 @@ void histogram_equalization_cuda(Mat& img) {
     dim3 block_tiling(TILE_SIZE, TILE_SIZE);
 
     cudaEventRecord(start);
-    histogram_equalization_tiled<<<grid_tiling, block_tiling>>>(thrust::raw_pointer_cast(d_image.data()), thrust::raw_pointer_cast(d_cdf.data()), rows, cols, cdf_min, cdf_max);
+    histogram_equalization_tiled<<<grid_tiling, block_tiling>>>(d_image, d_cdf, rows, cols, cdf_min, cdf_max);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float equalization_time;
     cudaEventElapsedTime(&equalization_time, start, stop);
     std::cout << "Histogram Equalization Time: " << equalization_time << " ms." << std::endl;
+    
+    // Memory transfer back from device to host (image)
+    cudaEventRecord(start);
+    cudaMemcpy(h_pinned_image, d_image, img_size * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float mem_transfer_back_time;
+    cudaEventElapsedTime(&mem_transfer_back_time, start, stop);
+    std::cout << "Memory Transfer Time (Device to Host): " << mem_transfer_back_time << " ms." << std::endl;
 
     // Copy the result back to the image
-    thrust::copy(d_image.begin(), d_image.end(), h_pinned_image);
     memcpy(img.data, h_pinned_image, img_size * sizeof(unsigned char));
+
+    // Free device memory
+    cudaFree(d_image);
+    cudaFree(d_histogram);
+    cudaFree(d_cdf);
 
     // Free host memory
     cudaFreeHost(h_pinned_image);
@@ -159,15 +215,48 @@ void histogram_equalization_cuda(Mat& img) {
 }
 
 int main() {
+    // Mat img = imread("images/img4.bmp", IMREAD_COLOR);
     Mat img = imread("images/img4.bmp", IMREAD_GRAYSCALE);
     if (img.empty()) {
         std::cerr << "Error loading image!" << std::endl;
         return -1;
     }
 
-    histogram_equalization_cuda(img);
+    // Check number of channels and decide on processing
+    if (img.channels() == 1) {
+        std::cout << "Processing single-channel image (grayscale)..." << std::endl;
+        histogram_equalization_cuda(img);
+    } else if (img.channels() == 3) {
+        std::cout << "Processing multi-channel image (RGB), converting to YCbCr..." << std::endl;
+
+        // Convert RGB to YCbCr
+        cv::Mat ycbcr_img;
+        cv::cvtColor(img, ycbcr_img, cv::COLOR_BGR2YCrCb);
+
+        // Split the YCbCr image into Y, Cb, and Cr channels
+        std::vector<cv::Mat> channels(3);
+        cv::split(ycbcr_img, channels);
+
+        // Extract the Y channel
+        cv::Mat& y_channel = channels[0];
+
+        // Use the old histogram equalization function for the Y channel
+        histogram_equalization_cuda(y_channel);
+
+        // Merge the Y, Cb, and Cr channels back
+        cv::merge(channels, ycbcr_img);
+
+        // Convert YCbCr back to RGB
+        cv::cvtColor(ycbcr_img, img, cv::COLOR_YCrCb2BGR);
+    } else {
+        std::cout << "Unsupported number of channels: " << img.channels() << std::endl;
+        return -1;
+    }
+
     imwrite("outputs/equalized.jpg", img);
     imshow("Equalized Image", img);
     waitKey(0);
+
     return 0;
 }
+

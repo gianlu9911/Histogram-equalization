@@ -269,7 +269,7 @@ void histogram_equalization_cuda(cv::Mat& img, std::string method) {
 
 int main() {
 
-    std::vector size = {2048};
+    std::vector size = {128, 256, 1024, 2048};
     for (int s : size) {
         Mat img_color = imread("images/img4.bmp", IMREAD_COLOR);
         cv::resize(img_color, img_color, cv::Size(s, s));

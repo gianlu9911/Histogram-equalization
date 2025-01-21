@@ -1,81 +1,31 @@
 Width,Height,Channels,Method,ExecutionTime(ms)
-128,128,1,OpenCV Grayscale,0.491478
-128,128,1,Manual Grayscale,0.473031
-128,128,3,OpenCV Color,1.41863
-128,128,3,Manual Color,0.429807
-256,256,1,OpenCV Grayscale,0.088935
-256,256,1,Manual Grayscale,0.731145
-256,256,3,OpenCV Color,0.445877
-256,256,3,Manual Color,2.18292
-512,512,1,OpenCV Grayscale,0.520165
-512,512,1,Manual Grayscale,2.74938
-512,512,3,OpenCV Color,2.14054
-512,512,3,Manual Color,8.82291
-1024,1024,1,OpenCV Grayscale,1.26624
-1024,1024,1,Manual Grayscale,8.97629
-1024,1024,3,OpenCV Color,6.46954
-1024,1024,3,Manual Color,23.9594
-2048,2048,1,OpenCV Grayscale,2.92701
-2048,2048,1,Manual Grayscale,39.0064
-2048,2048,3,OpenCV Color,14.1773
-2048,2048,3,Manual Color,88.5319
-128,128,1,OpenCV Grayscale,0.601018
-128,128,1,Manual Grayscale,0.706286
-128,128,3,OpenCV Color,1.1648
-128,128,3,Manual Color,0.430005
-128,128,3,Manual YCbCr Color,1.86683
-128,128,3,OpenCV YCbCr Color,0.090365
-256,256,1,OpenCV Grayscale,0.069595
-256,256,1,Manual Grayscale,0.501466
-256,256,3,OpenCV Color,0.353897
-256,256,3,Manual Color,1.60923
-256,256,3,Manual YCbCr Color,0.809354
-256,256,3,OpenCV YCbCr Color,0.288595
-512,512,1,OpenCV Grayscale,0.3622
-512,512,1,Manual Grayscale,1.90443
-512,512,3,OpenCV Color,1.59369
-512,512,3,Manual Color,5.46082
-512,512,3,Manual YCbCr Color,2.87321
-512,512,3,OpenCV YCbCr Color,1.10411
-1024,1024,1,OpenCV Grayscale,1.08933
-1024,1024,1,Manual Grayscale,7.99823
-1024,1024,3,OpenCV Color,5.65726
-1024,1024,3,Manual Color,22.1357
-1024,1024,3,Manual YCbCr Color,10.1945
-1024,1024,3,OpenCV YCbCr Color,6.2408
-2048,2048,1,OpenCV Grayscale,4.4741
-2048,2048,1,Manual Grayscale,31.782
-2048,2048,3,OpenCV Color,12.8609
-2048,2048,3,Manual Color,86.273
-2048,2048,3,Manual YCbCr Color,40.8987
-2048,2048,3,OpenCV YCbCr Color,10.3945
-128,128,1,OpenCV Grayscale,0.019328
-128,128,1,Manual Grayscale,0.125394
-128,128,3,OpenCV Color,0.100833
-128,128,3,Manual Color,0.307984
-128,128,3,Manual YCbCr Color,0.187961
-128,128,3,OpenCV YCbCr Color,0.057706
-256,256,1,OpenCV Grayscale,0.066936
-256,256,1,Manual Grayscale,0.764636
-256,256,3,OpenCV Color,0.311901
-256,256,3,Manual Color,2.16155
-256,256,3,Manual YCbCr Color,0.896162
-256,256,3,OpenCV YCbCr Color,0.560534
-512,512,1,OpenCV Grayscale,0.406473
-512,512,1,Manual Grayscale,1.86719
-512,512,3,OpenCV Color,1.35643
-512,512,3,Manual Color,7.16779
-512,512,3,Manual YCbCr Color,3.09592
-512,512,3,OpenCV YCbCr Color,0.612739
-1024,1024,1,OpenCV Grayscale,1.03528
-1024,1024,1,Manual Grayscale,6.23648
-1024,1024,3,OpenCV Color,5.51658
-1024,1024,3,Manual Color,25.2405
-1024,1024,3,Manual YCbCr Color,11.646
-1024,1024,3,OpenCV YCbCr Color,3.53032
-2048,2048,1,OpenCV Grayscale,2.81619
-2048,2048,1,Manual Grayscale,28.634
-2048,2048,3,OpenCV Color,13.8724
-2048,2048,3,Manual Color,80.1981
-2048,2048,3,Manual YCbCr Color,38.6752
-2048,2048,3,OpenCV YCbCr Color,13.6671
+128,128,1,OpenCV Grayscale,0.01392
+128,128,1,Manual Grayscale,0.090705
+128,128,3,OpenCV Color,0.079188
+128,128,3,Manual Color,0.276886
+128,128,3,Manual YCbCr Color,0.179492
+128,128,3,OpenCV YCbCr Color,0.059878
+256,256,1,OpenCV Grayscale,0.050256
+256,256,1,Manual Grayscale,0.340676
+256,256,3,OpenCV Color,0.305135
+256,256,3,Manual Color,1.10278
+256,256,3,Manual YCbCr Color,0.576518
+256,256,3,OpenCV YCbCr Color,0.236419
+512,512,1,OpenCV Grayscale,0.359662
+512,512,1,Manual Grayscale,1.42299
+512,512,3,OpenCV Color,1.07907
+512,512,3,Manual Color,4.35383
+512,512,3,Manual YCbCr Color,1.93376
+512,512,3,OpenCV YCbCr Color,0.623146
+1024,1024,1,OpenCV Grayscale,0.439739
+1024,1024,1,Manual Grayscale,6.19728
+1024,1024,3,OpenCV Color,3.16324
+1024,1024,3,Manual Color,17.7701
+1024,1024,3,Manual YCbCr Color,9.36044
+1024,1024,3,OpenCV YCbCr Color,2.13383
+2048,2048,1,OpenCV Grayscale,2.79777
+2048,2048,1,Manual Grayscale,22.986
+2048,2048,3,OpenCV Color,7.95114
+2048,2048,3,Manual Color,67.0939
+2048,2048,3,Manual YCbCr Color,30.2939
+2048,2048,3,OpenCV YCbCr Color,9.94208

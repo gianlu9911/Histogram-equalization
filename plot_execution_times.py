@@ -1,63 +1,83 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load the sequential execution times data
+# Load the CSV files
 sequential_df = pd.read_csv('execution_times_sequential.csv')
-
-# Load the parallel execution times (CUDA) data
 cuda_df = pd.read_csv('execution_times_cuda.csv')
 
-# Filter only 'Total execution' stage in the CUDA data
-cuda_df_filtered = cuda_df[cuda_df['Stage'] == 'Total execution']
+# Filter the rows corresponding to Manual Grayscale and Manual YCbCr Color methods
+sequential_grayscale = sequential_df[sequential_df['Method'] == 'Manual Grayscale']
+sequential_ycbcr = sequential_df[sequential_df['Method'] == 'Manual YCbCr Color']
 
-# Create an empty list to store the results
-results = []
+# Prepare lists to store speedup values
+speedup_grayscale = []
+speedup_ycbcr = []
 
-# Loop through the sequential data
-for _, seq_row in sequential_df.iterrows():
-    width = seq_row['Width']
-    channels = seq_row['Channels']
-    method = seq_row['Method']
-    seq_time = seq_row['ExecutionTime(ms)']
+# Iterate over sequential grayscale entries
+for index, row in sequential_grayscale.iterrows():
+    width = row['Width']
+    height = row['Height']
+    channels = row['Channels']
     
-    # Loop through the CUDA data to find the corresponding entry
-    for _, cuda_row in cuda_df_filtered.iterrows():
-        if cuda_row['Width'] == width and cuda_row['Channels'] == channels:
-            cuda_time = cuda_row['Time (ms)']
-            
-            # Calculate speedup
-            speedup = seq_time / cuda_time
-            
-            # Append the result to the list
-            results.append([speedup, width, channels, method])
-            break  # Found the matching entry, no need to loop further for this combination
+    # Find the matching parallel CUDA entry for Grayscale
+    matching_cuda = cuda_df[(cuda_df['Width'] == width) & (cuda_df['Height'] == height) &
+                            (cuda_df['Channels'] == channels) & (cuda_df['Method'] == 'Grayscale')]
+    
+    # Compute the speedup if a match is found
+    if not matching_cuda.empty:
+        sequential_time = row['ExecutionTime(ms)']
+        cuda_time = matching_cuda['ExecutionTime(ms)'].values[0]
+        speedup = sequential_time / cuda_time
+        tile_width = matching_cuda['TileWidth'].values[0]
+        tile_height = matching_cuda['TileHeight'].values[0]
+        block_width = matching_cuda['BlockWidth'].values[0]
+        block_height = matching_cuda['BlockHeight'].values[0]
+        speedup_grayscale.append((width, speedup, tile_width, tile_height, block_width, block_height))
 
-# Create a DataFrame from the results
-results_df = pd.DataFrame(results, columns=['Speedup', 'Width', 'Channels', 'Method'])
+# Iterate over sequential YCbCr entries
+for index, row in sequential_ycbcr.iterrows():
+    width = row['Width']
+    height = row['Height']
+    channels = row['Channels']
+    
+    # Find the matching parallel CUDA entry for YCbCr
+    matching_cuda = cuda_df[(cuda_df['Width'] == width) & (cuda_df['Height'] == height) &
+                            (cuda_df['Channels'] == channels) & (cuda_df['Method'] == 'YCbCr')]
+    
+    # Compute the speedup if a match is found
+    if not matching_cuda.empty:
+        sequential_time = row['ExecutionTime(ms)']
+        cuda_time = matching_cuda['ExecutionTime(ms)'].values[0]
+        speedup = sequential_time / cuda_time
+        tile_width = matching_cuda['TileWidth'].values[0]
+        tile_height = matching_cuda['TileHeight'].values[0]
+        block_width = matching_cuda['BlockWidth'].values[0]
+        block_height = matching_cuda['BlockHeight'].values[0]
+        speedup_ycbcr.append((width, speedup, tile_width, tile_height, block_width, block_height))
 
-# Create a plot
-plt.figure(figsize=(12, 7))
+# Convert the results into DataFrames
+df_grayscale_speedup = pd.DataFrame(speedup_grayscale, columns=['Width', 'Speedup', 'TileWidth', 'TileHeight', 'BlockWidth', 'BlockHeight'])
+df_ycbcr_speedup = pd.DataFrame(speedup_ycbcr, columns=['Width', 'Speedup', 'TileWidth', 'TileHeight', 'BlockWidth', 'BlockHeight'])
 
-# List of all methods to plot
-methods = ['OpenCV Grayscale', 'OpenCV Color', 'Manual Grayscale', 'Manual Color']
+# Plot the speedup results
+plt.figure(figsize=(10, 6))
 
-# Define colors for each method for better distinction
-colors = ['b', 'g', 'r', 'c']
+# Plot Grayscale speedup
+plt.plot(df_grayscale_speedup['Width'], df_grayscale_speedup['Speedup'], label='Grayscale', marker='o')
 
-# Plot speedup curves for each method
-for method, color in zip(methods, colors):
-    method_df = results_df[results_df['Method'] == method]
-    method_df = method_df.sort_values('Width')  # Sort by Width to ensure the curve is plotted correctly
-    plt.plot(method_df['Width'], method_df['Speedup'], label=method, marker='o', markersize=8, color=color, linewidth=2)
+# Plot YCbCr speedup
+plt.plot(df_ycbcr_speedup['Width'], df_ycbcr_speedup['Speedup'], label='YCbCr', marker='x')
 
-# Customize the plot
-plt.xlabel('Resolution (Width)', fontsize=14)
-plt.ylabel('Speedup', fontsize=14)
-plt.title('Speedup vs Resolution for Different Methods', fontsize=16)
-plt.legend(fontsize=12)
-plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-plt.minorticks_on()  # Enable minor gridlines
-plt.tight_layout()
+# Adding labels and title with block and tile size
+tile_width = df_grayscale_speedup['TileWidth'].values[0]  # Assume all entries have the same tile width
+tile_height = df_grayscale_speedup['TileHeight'].values[0]  # Assume all entries have the same tile height
+block_width = df_grayscale_speedup['BlockWidth'].values[0]  # Assume all entries have the same block width
+block_height = df_grayscale_speedup['BlockHeight'].values[0]  # Assume all entries have the same block height
 
-# Show the plot
+plt.xlabel('Width')
+plt.ylabel('Speedup (Sequential / CUDA)')
+plt.title(f'Speedup Comparison: Manual vs CUDA for Grayscale and YCbCr\nTile: {tile_width}x{tile_height}, Block: {block_width}x{block_height}')
+plt.legend()
+
+plt.grid(True)
 plt.show()

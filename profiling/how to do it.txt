@@ -2,7 +2,7 @@
      cd so that you go in /home/sangi/my_programs/parallel_computing/hitogram_equalization
 
 - now:
-     ncu -o ./profiling/histogram_cuda_profile build/histogram_cuda
+     ncu -o ./profiling/histogram_cuda_profile build/CudaVariation
     
     this should create a profiling file inside the profiling folder.
 

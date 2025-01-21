@@ -1,305 +1,217 @@
-#include "UtilityCuda.cu"
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <cuda_runtime.h>
 
-void equalizeImageWithCUDA(const cv::Mat& inputImage)
-{
-    int width = inputImage.cols;
-    int height = inputImage.rows;
+#define HISTOGRAM_SIZE 256
+#define TILE_SIZE 32
 
-    // Allocate pinned host memory
-    unsigned char *h_image;
-    CUDA_CHECK(cudaMallocHost(&h_image, width * height * 3 * sizeof(unsigned char))); // Pinned memory
+__global__ void calculate_histogram_tiled(unsigned char* d_channel, int* d_histogram, int rows, int cols) {
+    __shared__ int local_histogram[HISTOGRAM_SIZE];
 
-    // Copy input image data to pinned memory
-    std::memcpy(h_image, inputImage.data, width * height * 3 * sizeof(unsigned char));
+    int thread_id = threadIdx.y * blockDim.x + threadIdx.x;
+    int global_x = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int global_y = blockIdx.y * TILE_SIZE + threadIdx.y;
 
-    // Allocate device memory
-    unsigned char* d_image;
-    unsigned char* d_output;
-    int *d_hist_r, *d_hist_g, *d_hist_b;
-    unsigned char *d_cdf_r, *d_cdf_g, *d_cdf_b;
+    if (thread_id < HISTOGRAM_SIZE) local_histogram[thread_id] = 0;
+    __syncthreads();
 
-    // Timing variables
-    cudaEvent_t start, stop, histStart, histStop, cdfStart, cdfStop, eqStart, eqStop;
-    CUDA_CHECK(cudaEventCreate(&start));
-    CUDA_CHECK(cudaEventCreate(&stop));
-    CUDA_CHECK(cudaEventCreate(&histStart));
-    CUDA_CHECK(cudaEventCreate(&histStop));
-    CUDA_CHECK(cudaEventCreate(&cdfStart));
-    CUDA_CHECK(cudaEventCreate(&cdfStop));
-    CUDA_CHECK(cudaEventCreate(&eqStart));
-    CUDA_CHECK(cudaEventCreate(&eqStop));
+    if (global_x < cols && global_y < rows) {
+        atomicAdd(&local_histogram[d_channel[global_y * cols + global_x]], 1);
+    }
+    __syncthreads();
 
-    // Start timing for the entire process
-    CUDA_CHECK(cudaEventRecord(start));
-
-    // Allocate device memory for image and output
-    CUDA_CHECK(cudaMalloc(&d_image, width * height * 3 * sizeof(unsigned char)));
-    CUDA_CHECK(cudaMemcpy(d_image, h_image, width * height * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice));
-
-    CUDA_CHECK(cudaMalloc(&d_output, width * height * 3 * sizeof(unsigned char)));
-
-    // Allocate device memory for histograms
-    CUDA_CHECK(cudaMalloc(&d_hist_r, 256 * sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&d_hist_g, 256 * sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&d_hist_b, 256 * sizeof(int)));
-
-    CUDA_CHECK(cudaMemset(d_hist_r, 0, 256 * sizeof(int)));
-    CUDA_CHECK(cudaMemset(d_hist_g, 0, 256 * sizeof(int)));
-    CUDA_CHECK(cudaMemset(d_hist_b, 0, 256 * sizeof(int)));
-
-    // Start timing for histogram computation
-    CUDA_CHECK(cudaEventRecord(histStart));
-
-    // Compute histogram on the device
-    dim3 block(16, 16);
-    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    computeHistogram<<<grid, block>>>(d_image, d_hist_r, d_hist_g, d_hist_b, width, height);
-
-    // Stop timing for histogram computation
-    CUDA_CHECK(cudaEventRecord(histStop));
-    CUDA_CHECK(cudaEventSynchronize(histStop));
-
-    float histTime = 0.0f;
-    CUDA_CHECK(cudaEventElapsedTime(&histTime, histStart, histStop));
-    std::cout << "Histogram computation time: " << histTime << " ms" << std::endl;
-
-    // Copy the histograms from device to host
-    int h_hist_r[256] = {0};
-    int h_hist_g[256] = {0};
-    int h_hist_b[256] = {0};
-
-    CUDA_CHECK(cudaMemcpy(h_hist_r, d_hist_r, 256 * sizeof(int), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(h_hist_g, d_hist_g, 256 * sizeof(int), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(h_hist_b, d_hist_b, 256 * sizeof(int), cudaMemcpyDeviceToHost));
-
-    // Normalize the histograms
-    int max_height = 256; // Height for displaying the histogram images
-    normalizeHistogram(h_hist_r, 256, max_height);
-    normalizeHistogram(h_hist_g, 256, max_height);
-    normalizeHistogram(h_hist_b, 256, max_height);
-
-    // Create black images for plotting the histograms
-    cv::Mat hist_img_r = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-    cv::Mat hist_img_g = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-    cv::Mat hist_img_b = cv::Mat::zeros(cv::Size(256, max_height), CV_8UC3);
-
-    // Combine the individual histograms into one image
-    cv::Mat combined_hist;
-    cv::hconcat(hist_img_r, hist_img_g, combined_hist);
-    cv::hconcat(combined_hist, hist_img_b, combined_hist);
-
-    // Display the combined histogram image
-    //cv::imshow("RGB Histograms", combined_hist);
-    //cv::waitKey(0);
-
-    // Allocate memory for CDFs
-    CUDA_CHECK(cudaMalloc(&d_cdf_r, 256 * sizeof(unsigned char)));
-    CUDA_CHECK(cudaMalloc(&d_cdf_g, 256 * sizeof(unsigned char)));
-    CUDA_CHECK(cudaMalloc(&d_cdf_b, 256 * sizeof(unsigned char)));
-
-    // Start timing for CDF computation
-    CUDA_CHECK(cudaEventRecord(cdfStart));
-
-    // Compute CDFs on the device
-    computeCDF<<<1, 256>>>(d_hist_r, d_cdf_r, width, height);
-    computeCDF<<<1, 256>>>(d_hist_g, d_cdf_g, width, height);
-    computeCDF<<<1, 256>>>(d_hist_b, d_cdf_b, width, height);
-
-    // Stop timing for CDF computation
-    CUDA_CHECK(cudaEventRecord(cdfStop));
-    CUDA_CHECK(cudaEventSynchronize(cdfStop));
-
-    float cdfTime = 0.0f;
-    CUDA_CHECK(cudaEventElapsedTime(&cdfTime, cdfStart, cdfStop));
-    std::cout << "CDF computation time: " << cdfTime << " ms" << std::endl;
-
-    // Launch the kernel to apply histogram equalization
-    CUDA_CHECK(cudaEventRecord(eqStart));
-    equalizeRGBImageTiled<<<grid, block>>>(d_image, d_output, width, height, d_cdf_r, d_cdf_g, d_cdf_b);
-    CUDA_CHECK(cudaEventRecord(eqStop));
-    CUDA_CHECK(cudaEventSynchronize(eqStop));
-
-    // Stop timing for histogram equalization
-    float eqTime = 0.0f;
-    CUDA_CHECK(cudaEventElapsedTime(&eqTime, eqStart, eqStop));
-    std::cout << "Histogram equalization time: " << eqTime << " ms" << std::endl;
-
-    // Copy result back to host
-    cv::Mat outputImage(height, width, CV_8UC3);
-    CUDA_CHECK(cudaMemcpy(outputImage.data, d_output, width * height * 3 * sizeof(unsigned char), cudaMemcpyDeviceToHost));
-
-    // Cleanup
-    CUDA_CHECK(cudaFree(d_image));
-    CUDA_CHECK(cudaFree(d_output));
-    CUDA_CHECK(cudaFree(d_hist_r));
-    CUDA_CHECK(cudaFree(d_hist_g));
-    CUDA_CHECK(cudaFree(d_hist_b));
-    CUDA_CHECK(cudaFree(d_cdf_r));
-    CUDA_CHECK(cudaFree(d_cdf_g));
-    CUDA_CHECK(cudaFree(d_cdf_b));
-    CUDA_CHECK(cudaEventDestroy(start));
-    CUDA_CHECK(cudaEventDestroy(stop));
-    CUDA_CHECK(cudaEventDestroy(histStart));
-    CUDA_CHECK(cudaEventDestroy(histStop));
-    CUDA_CHECK(cudaEventDestroy(cdfStart));
-    CUDA_CHECK(cudaEventDestroy(cdfStop));
-    CUDA_CHECK(cudaEventDestroy(eqStart));
-    CUDA_CHECK(cudaEventDestroy(eqStop));
-
-    // Save the processed image
-    cv::imwrite("../outputs/cuda_equalized_RGB_image.jpg", outputImage);
-
-    // Free pinned host memory
-    CUDA_CHECK(cudaFreeHost(h_image));
+    if (thread_id < HISTOGRAM_SIZE) {
+        atomicAdd(&d_histogram[thread_id], local_histogram[thread_id]);
+    }
 }
 
-void equalizeImageWithCUDAGrayscale(const cv::Mat& inputImage) {
-    int width = inputImage.cols;
-    int height = inputImage.rows;
+__global__ void prefix_sum_kernel(int* d_histogram, int* d_cdf) {
+    __shared__ int temp[HISTOGRAM_SIZE];
 
-    // Allocate pinned host memory
-    unsigned char *h_image;
-    CUDA_CHECK(cudaMallocHost(&h_image, width * height * sizeof(unsigned char))); // Pinned memory
+    int idx = threadIdx.x;
+    if (idx < HISTOGRAM_SIZE) temp[idx] = d_histogram[idx];
+    __syncthreads();
 
-    // Copy input image data to pinned memory
-    std::memcpy(h_image, inputImage.data, width * height * sizeof(unsigned char));
+    for (int offset = 1; offset < HISTOGRAM_SIZE; offset *= 2) {
+        int val = 0;
+        if (idx >= offset) val = temp[idx - offset];
+        __syncthreads();
+        temp[idx] += val;
+        __syncthreads();
+    }
 
-    // Device memory allocation
-    unsigned char *d_image, *d_output;
-    int *d_hist;
-    unsigned char *d_cdf;
+    if (idx < HISTOGRAM_SIZE) d_cdf[idx] = temp[idx];
+}
 
-    // CUDA events for timing
+__global__ void histogram_equalization_tiled(unsigned char* d_channel, int* d_cdf, int rows, int cols, int cdf_min, int cdf_max) {
+    int x = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int y = blockIdx.y * TILE_SIZE + threadIdx.y;
+
+    if (x < cols && y < rows) {
+        int pixel = d_channel[y * cols + x];
+        d_channel[y * cols + x] = (unsigned char)(((d_cdf[pixel] - cdf_min) * 255) / (cdf_max - cdf_min));
+    }
+}
+
+void histogram_equalization_rgb_cuda(cv::Mat& img) {
+    int rows = img.rows, cols = img.cols;
+    int img_size = rows * cols;
+    int channel_size = img_size * sizeof(unsigned char);
+
+    std::vector<cv::Mat> channels(3);
+    cv::split(img, channels);  
+
+    unsigned char *h_r, *h_g, *h_b;
+    cudaHostAlloc((void**)&h_r, channel_size, cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_g, channel_size, cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_b, channel_size, cudaHostAllocDefault);
+
+    memcpy(h_r, channels[2].data, channel_size);  // R
+    memcpy(h_g, channels[1].data, channel_size);  // G
+    memcpy(h_b, channels[0].data, channel_size);  // B
+
+    unsigned char *d_r, *d_g, *d_b;
+    int *d_histogram_r, *d_histogram_g, *d_histogram_b;
+    int *d_cdf_r, *d_cdf_g, *d_cdf_b;
+
+    cudaMalloc(&d_r, channel_size);
+    cudaMalloc(&d_g, channel_size);
+    cudaMalloc(&d_b, channel_size);
+    cudaMalloc(&d_histogram_r, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc(&d_histogram_g, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc(&d_histogram_b, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc(&d_cdf_r, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc(&d_cdf_g, HISTOGRAM_SIZE * sizeof(int));
+    cudaMalloc(&d_cdf_b, HISTOGRAM_SIZE * sizeof(int));
+
+    cudaMemcpy(d_r, h_r, channel_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_g, h_g, channel_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, h_b, channel_size, cudaMemcpyHostToDevice);
+
+    dim3 block(TILE_SIZE, TILE_SIZE);
+    dim3 grid((cols + TILE_SIZE - 1) / TILE_SIZE, (rows + TILE_SIZE - 1) / TILE_SIZE);
+
     cudaEvent_t start, stop;
-    CUDA_CHECK(cudaEventCreate(&start));
-    CUDA_CHECK(cudaEventCreate(&stop));
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    float total_time = 0, histogram_time = 0, cdf_time = 0, equalization_time = 0, memory_transfer_time = 0;
 
-    // Start overall time measurement
-    CUDA_CHECK(cudaEventRecord(start));
+    cudaEventRecord(start);
+    
+    cudaEvent_t hist_start, hist_stop;
+    cudaEventCreate(&hist_start);
+    cudaEventCreate(&hist_stop);
+    cudaEventRecord(hist_start);
 
-    // Allocate device memory
-    CUDA_CHECK(cudaMalloc(&d_image, width * height * sizeof(unsigned char)));
-    CUDA_CHECK(cudaMemcpy(d_image, h_image, width * height * sizeof(unsigned char), cudaMemcpyHostToDevice));
+    calculate_histogram_tiled<<<grid, block>>>(d_r, d_histogram_r, rows, cols);
+    calculate_histogram_tiled<<<grid, block>>>(d_g, d_histogram_g, rows, cols);
+    calculate_histogram_tiled<<<grid, block>>>(d_b, d_histogram_b, rows, cols);
 
-    CUDA_CHECK(cudaMalloc(&d_output, width * height * sizeof(unsigned char)));
-    CUDA_CHECK(cudaMalloc(&d_hist, 256 * sizeof(int)));
-    CUDA_CHECK(cudaMemset(d_hist, 0, 256 * sizeof(int)));
+    cudaEventRecord(hist_stop);
+    cudaEventSynchronize(hist_stop);
+    cudaEventElapsedTime(&histogram_time, hist_start, hist_stop);
 
-    CUDA_CHECK(cudaMalloc(&d_cdf, 256 * sizeof(unsigned char)));
+    cudaEvent_t cdf_start, cdf_stop;
+    cudaEventCreate(&cdf_start);
+    cudaEventCreate(&cdf_stop);
+    cudaEventRecord(cdf_start);
 
-    // ----------------------------------------
-    // Compute Histogram
-    // ----------------------------------------
+    prefix_sum_kernel<<<1, HISTOGRAM_SIZE>>>(d_histogram_r, d_cdf_r);
+    prefix_sum_kernel<<<1, HISTOGRAM_SIZE>>>(d_histogram_g, d_cdf_g);
+    prefix_sum_kernel<<<1, HISTOGRAM_SIZE>>>(d_histogram_b, d_cdf_b);
 
-    cudaEvent_t histStart, histStop;
-    CUDA_CHECK(cudaEventCreate(&histStart));
-    CUDA_CHECK(cudaEventCreate(&histStop));
-    CUDA_CHECK(cudaEventRecord(histStart));
+    cudaEventRecord(cdf_stop);
+    cudaEventSynchronize(cdf_stop);
+    cudaEventElapsedTime(&cdf_time, cdf_start, cdf_stop);
 
-    // Compute histogram on the device
-    dim3 block(32,32);
-    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    computeHistogramGrayscale<<<grid, block>>>(d_image, d_hist, width, height);
-    CUDA_CHECK(cudaDeviceSynchronize());
+    int h_cdf_r[HISTOGRAM_SIZE], h_cdf_g[HISTOGRAM_SIZE], h_cdf_b[HISTOGRAM_SIZE];
+    cudaMemcpy(h_cdf_r, d_cdf_r, HISTOGRAM_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_cdf_g, d_cdf_g, HISTOGRAM_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_cdf_b, d_cdf_b, HISTOGRAM_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
 
-    CUDA_CHECK(cudaEventRecord(histStop));
-    CUDA_CHECK(cudaEventSynchronize(histStop));
+    int cdf_min_r = h_cdf_r[0], cdf_max_r = h_cdf_r[255];
+    int cdf_min_g = h_cdf_g[0], cdf_max_g = h_cdf_g[255];
+    int cdf_min_b = h_cdf_b[0], cdf_max_b = h_cdf_b[255];
 
-    float histMilliseconds = 0;
-    CUDA_CHECK(cudaEventElapsedTime(&histMilliseconds, histStart, histStop));
-    std::cout << "Histogram computation time: " << histMilliseconds << " ms.\n";
+    cudaEvent_t equal_start, equal_stop;
+    cudaEventCreate(&equal_start);
+    cudaEventCreate(&equal_stop);
+    cudaEventRecord(equal_start);
 
-    // ----------------------------------------
-    // Compute CDF
-    // ----------------------------------------
+    histogram_equalization_tiled<<<grid, block>>>(d_r, d_cdf_r, rows, cols, cdf_min_r, cdf_max_r);
+    histogram_equalization_tiled<<<grid, block>>>(d_g, d_cdf_g, rows, cols, cdf_min_g, cdf_max_g);
+    histogram_equalization_tiled<<<grid, block>>>(d_b, d_cdf_b, rows, cols, cdf_min_b, cdf_max_b);
 
-    cudaEvent_t cdfStart, cdfStop;
-    CUDA_CHECK(cudaEventCreate(&cdfStart));
-    CUDA_CHECK(cudaEventCreate(&cdfStop));
-    CUDA_CHECK(cudaEventRecord(cdfStart));
+    cudaEventRecord(equal_stop);
+    cudaEventSynchronize(equal_stop);
+    cudaEventElapsedTime(&equalization_time, equal_start, equal_stop);
 
-    // Compute CDF on the device
-    computeCDFGrayscale<<<1, 256>>>(d_hist, d_cdf, width, height);
-    CUDA_CHECK(cudaDeviceSynchronize());
+    cudaEvent_t mem_start, mem_stop;
+    cudaEventCreate(&mem_start);
+    cudaEventCreate(&mem_stop);
+    cudaEventRecord(mem_start);
 
-    CUDA_CHECK(cudaEventRecord(cdfStop));
-    CUDA_CHECK(cudaEventSynchronize(cdfStop));
+    cudaMemcpy(h_r, d_r, channel_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_g, d_g, channel_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_b, d_b, channel_size, cudaMemcpyDeviceToHost);
 
-    float cdfMilliseconds = 0;
-    CUDA_CHECK(cudaEventElapsedTime(&cdfMilliseconds, cdfStart, cdfStop));
-    std::cout << "CDF computation time: " << cdfMilliseconds << " ms.\n";
+    cudaEventRecord(mem_stop);
+    cudaEventSynchronize(mem_stop);
+    cudaEventElapsedTime(&memory_transfer_time, mem_start, mem_stop);
 
-    // ----------------------------------------
-    // Histogram Equalization
-    // ----------------------------------------
+    memcpy(channels[2].data, h_r, channel_size);
+    memcpy(channels[1].data, h_g, channel_size);
+    memcpy(channels[0].data, h_b, channel_size);
+    cv::merge(channels, img);
 
-    cudaEvent_t eqStart, eqStop;
-    CUDA_CHECK(cudaEventCreate(&eqStart));
-    CUDA_CHECK(cudaEventCreate(&eqStop));
-    CUDA_CHECK(cudaEventRecord(eqStart));
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&total_time, start, stop);
 
-    // Apply histogram equalization
-    equalizeGrayscaleImageTiled<<<grid, block>>>(d_image, d_output, width, height, d_cdf);
-    CUDA_CHECK(cudaDeviceSynchronize());
+    std::cout << "Total execution time: " << total_time << " ms" << std::endl;
+    std::cout << "Histogram computation time: " << histogram_time << " ms" << std::endl;
+    std::cout << "CDF computation time: " << cdf_time << " ms" << std::endl;
+    std::cout << "Equalization computation time: " << equalization_time << " ms" << std::endl;
+    std::cout << "Memory transfer time: " << memory_transfer_time << " ms" << std::endl;
 
-    CUDA_CHECK(cudaEventRecord(eqStop));
-    CUDA_CHECK(cudaEventSynchronize(eqStop));
+    cudaFreeHost(h_r);
+    cudaFreeHost(h_g);
+    cudaFreeHost(h_b);
+    cudaFree(d_r);
+    cudaFree(d_g);
+    cudaFree(d_b);
+    cudaFree(d_histogram_r);
+    cudaFree(d_histogram_g);
+    cudaFree(d_histogram_b);
+    cudaFree(d_cdf_r);
+    cudaFree(d_cdf_g);
+    cudaFree(d_cdf_b);
 
-    float eqMilliseconds = 0;
-    CUDA_CHECK(cudaEventElapsedTime(&eqMilliseconds, eqStart, eqStop));
-    std::cout << "Equalization computation time: " << eqMilliseconds << " ms.\n";
-
-    // ----------------------------------------
-    // Copy output to host and cleanup
-    // ----------------------------------------
-
-    cv::Mat outputImage(height, width, CV_8UC1);
-    CUDA_CHECK(cudaMemcpy(outputImage.data, d_output, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost));
-
-    // Cleanup
-    CUDA_CHECK(cudaFree(d_image));
-    CUDA_CHECK(cudaFree(d_output));
-    CUDA_CHECK(cudaFree(d_hist));
-    CUDA_CHECK(cudaFree(d_cdf));
-    CUDA_CHECK(cudaEventDestroy(start));
-    CUDA_CHECK(cudaEventDestroy(stop));
-    CUDA_CHECK(cudaEventDestroy(histStart));
-    CUDA_CHECK(cudaEventDestroy(histStop));
-    CUDA_CHECK(cudaEventDestroy(cdfStart));
-    CUDA_CHECK(cudaEventDestroy(cdfStop));
-    CUDA_CHECK(cudaEventDestroy(eqStart));
-    CUDA_CHECK(cudaEventDestroy(eqStop));
-
-    // Save the processed image
-    cv::imwrite("../outputs/cuda_equalized_grayscale_image.jpg", outputImage);
-
-    // Free pinned host memory
-    CUDA_CHECK(cudaFreeHost(h_image));
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    cudaEventDestroy(hist_start);
+    cudaEventDestroy(hist_stop);
+    cudaEventDestroy(cdf_start);
+    cudaEventDestroy(cdf_stop);
+    cudaEventDestroy(equal_start);
+    cudaEventDestroy(equal_stop);
+    cudaEventDestroy(mem_start);
+    cudaEventDestroy(mem_stop);
 }
-
 
 int main() {
-    // Load the image as grayscale
-    cv::Mat inputImageGray = cv::imread("images/img2.bmp", cv::IMREAD_GRAYSCALE); // Load in grayscale
-    if (inputImageGray.empty()) {
-        std::cerr << "Error: Could not load image!" << std::endl;
+    cv::Mat img = cv::imread("images/img4.bmp");
+    if (img.empty()) {
+        std::cerr << "Error loading image!" << std::endl;
         return -1;
     }
 
-    // Process grayscale image
-    std::cout << "Processing grayscale image..." << std::endl;
-    equalizeImageWithCUDAGrayscale(inputImageGray);
-
-    // Load the image as color (RGB)
-    cv::Mat inputImageColor = cv::imread("images/img2.bmp", cv::IMREAD_COLOR); // Load in color (3 channels)
-    if (inputImageColor.empty()) {
-        std::cerr << "Error: Could not load image!" << std::endl;
-        return -1;
-    }
-
-    // Process color image
-    std::cout << "Processing color image..." << std::endl;
-    equalizeImageWithCUDA(inputImageColor);
+    cv::imshow("Original Image", img);
+    histogram_equalization_rgb_cuda(img);
+    
+    cv::imshow("Equalized Image", img);
+    cv::waitKey(0);  // Wait indefinitely for a key press
+    cv::destroyAllWindows();  // Close all OpenCV windows
 
     return 0;
 }

@@ -3,45 +3,48 @@
 #include <iostream>
 
 #define HISTOGRAM_SIZE 256
-#define TILE_SIZE 32    // Increased tile size for better parallelism
+#define TILE_SIZE 32
 
 using namespace cv;
 
 // Warm-up kernel to stabilize CUDA performance
 __global__ void warmup_kernel() {
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx == 0) {
-        // Dummy operation
+    
+    // Perform a dummy computation to engage GPU cores
+    float temp = 0.0f;
+    for (int i = 0; i < 100; i++) {
+        temp += sinf(idx * 0.01f); // Arbitrary computation
     }
 }
+
 
 __global__ void calculate_histogram_tiled(unsigned char* d_image, int* d_histogram, int rows, int cols) {
-    __shared__ int local_histogram[HISTOGRAM_SIZE];  // Shared memory for local histogram
-    int x = blockIdx.x * TILE_SIZE + threadIdx.x;
-    int y = blockIdx.y * TILE_SIZE + threadIdx.y;
+    __shared__ int local_histogram[HISTOGRAM_SIZE];  // Shared memory histogram
 
-    // Initialize local histogram to zero
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-        for (int i = 0; i < HISTOGRAM_SIZE; i++) {
-            local_histogram[i] = 0;
-        }
+    int thread_id = threadIdx.y * blockDim.x + threadIdx.x;  // Unique thread ID in block
+    int global_x = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int global_y = blockIdx.y * TILE_SIZE + threadIdx.y;
+
+    // Step 1: Initialize shared memory histogram using all threads
+    if (thread_id < HISTOGRAM_SIZE) {
+        local_histogram[thread_id] = 0;
     }
     __syncthreads();
 
-    // Process a tile of the image
-    if (x < cols && y < rows) {
-        unsigned char val = d_image[y * cols + x];
-        atomicAdd(&local_histogram[val], 1);  // Increment local histogram for this pixel value
+    // Step 2: Coalesced memory access for image pixels
+    if (global_x < cols && global_y < rows) {
+        unsigned char pixel = d_image[global_y * cols + global_x];
+        atomicAdd(&local_histogram[pixel], 1);  // Efficient atomic update within shared memory
     }
     __syncthreads();
 
-    // Write the results of the local histogram back to global memory
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-        for (int i = 0; i < HISTOGRAM_SIZE; i++) {
-            atomicAdd(&d_histogram[i], local_histogram[i]);
-        }
+    // Step 3: Efficient shared-to-global histogram update
+    if (thread_id < HISTOGRAM_SIZE) {
+        atomicAdd(&d_histogram[thread_id], local_histogram[thread_id]);  // Minimized global atomics
     }
 }
+
 
 
 // Prefix sum kernel to calculate the CDF of the histogram

@@ -124,3 +124,65 @@ double equalizeHistogramColorManual(const cv::Mat& inputImage, cv::Mat& outputIm
 
     return executionTime;
 }
+
+// Function to equalize histogram for grayscale images using YCbCr space (manual)
+double equalizeHistogramRGB_YCbCrManual(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Convert from RGB to YCbCr
+    cv::Mat ycbcrImg;
+    cv::cvtColor(inputImage, ycbcrImg, cv::COLOR_BGR2YCrCb); // Use YCrCb, which is similar to YCbCr
+
+    // Split channels into Y, Cb, and Cr
+    std::vector<cv::Mat> channels;
+    cv::split(ycbcrImg, channels);
+
+    // Equalize the Y (luminance) channel
+    cv::Mat equalizedY;
+    equalizeHistogramGrayManual(channels[0], equalizedY, false); // Use your manual grayscale equalization for the Y channel
+
+    // Merge the equalized Y channel back with Cb and Cr channels
+    channels[0] = equalizedY;
+    cv::merge(channels, ycbcrImg);
+
+    // Convert back to RGB
+    cv::cvtColor(ycbcrImg, outputImage, cv::COLOR_YCrCb2BGR); // Convert back to RGB
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double executionTime = std::chrono::duration<double, std::milli>(end - start).count();
+    if (printTime) {
+        std::cout << "Manual RGB Histogram equalization in YCbCr space time: " << executionTime << " ms" << std::endl;
+    }
+
+    return executionTime;
+}
+
+// Function to equalize histogram for color images using YCbCr space (OpenCV)
+double equalizeHistogramRGB_YCbCrOpenCV(const cv::Mat& inputImage, cv::Mat& outputImage, bool printTime = true) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Convert from RGB to YCbCr
+    cv::Mat ycbcrImg;
+    cv::cvtColor(inputImage, ycbcrImg, cv::COLOR_BGR2YCrCb); // Use YCrCb, which is similar to YCbCr
+
+    // Split channels into Y, Cb, and Cr
+    std::vector<cv::Mat> channels;
+    cv::split(ycbcrImg, channels);
+
+    // Equalize the Y (luminance) channel
+    cv::equalizeHist(channels[0], channels[0]); // Apply OpenCV equalization on the Y channel
+
+    // Merge the equalized Y channel back with Cb and Cr channels
+    cv::merge(channels, ycbcrImg);
+
+    // Convert back to RGB
+    cv::cvtColor(ycbcrImg, outputImage, cv::COLOR_YCrCb2BGR); // Convert back to RGB
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double executionTime = std::chrono::duration<double, std::milli>(end - start).count();
+    if (printTime) {
+        std::cout << "OpenCV RGB Histogram equalization in YCbCr space time: " << executionTime << " ms" << std::endl;
+    }
+
+    return executionTime;
+}

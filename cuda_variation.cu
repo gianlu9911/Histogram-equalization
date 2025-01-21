@@ -1,6 +1,10 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 #include <iostream>
+#include <fstream>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <sys/stat.h>
 
 #define HISTOGRAM_SIZE 256
 #define TILE_SIZE 32
@@ -98,7 +102,40 @@ __global__ void histogram_equalization_tiled(unsigned char* d_image, int* d_cdf,
         d_image[y * cols + x] = tile[threadIdx.y][threadIdx.x];
     }
 }
-void histogram_equalization_cuda(cv::Mat& img) {
+
+void saveExecutionTimesToCSV(const std::vector<std::tuple<int, int, int, std::string, double, int, int, int, int>>& executionTimes) {
+    std::ofstream file;
+    bool isNewFile = false;
+
+    // Check if the file exists and is empty
+    struct stat buffer;
+    if (stat("execution_times_cuda.csv", &buffer) != 0) {
+        isNewFile = true; // The file doesn't exist, so we'll create it
+    } else if (buffer.st_size == 0) {
+        isNewFile = true; // The file exists but is empty
+    }
+
+    file.open("execution_times_cuda.csv", std::ios::app); // Open in append mode
+
+    // If the file is new or empty, write the header
+    if (isNewFile) {
+        file << "Width,Height,Channels,Method,ExecutionTime(ms),BlockWidth,BlockHeight,TileWidth,TileHeight\n";
+    }
+
+    // Write the execution times to the file
+    for (const auto& execTime : executionTimes) {
+        int width, height, channels, blockWidth, blockHeight, tileWidth, tileHeight;
+        std::string method;
+        double time;
+        std::tie(width, height, channels, method, time, blockWidth, blockHeight, tileWidth, tileHeight) = execTime;
+        file << width << "," << height << "," << channels << "," << method << "," << time << ","
+             << blockWidth << "," << blockHeight << "," << tileWidth << "," << tileHeight << "\n";
+    }
+
+    file.close();
+}
+
+void histogram_equalization_cuda(cv::Mat& img, std::string method) {
     int rows = img.rows, cols = img.cols;
     int img_size = rows * cols;
     int* h_histogram;
@@ -145,7 +182,7 @@ void histogram_equalization_cuda(cv::Mat& img) {
 
     // Histogram Calculation
     cudaEventRecord(start);
-    dim3 block(32, 32);
+    dim3 block(32, 32);  // Block dimensions
     dim3 grid((cols + block.x - 1) / block.x, (rows + block.y - 1) / block.y);
     calculate_histogram_tiled<<<grid, block>>>(d_image, d_histogram, rows, cols);
     cudaEventRecord(stop);
@@ -177,7 +214,7 @@ void histogram_equalization_cuda(cv::Mat& img) {
 
     // Histogram Equalization using tiling
     dim3 grid_tiling((cols + TILE_SIZE - 1) / TILE_SIZE, (rows + TILE_SIZE - 1) / TILE_SIZE);
-    dim3 block_tiling(TILE_SIZE, TILE_SIZE);
+    dim3 block_tiling(TILE_SIZE, TILE_SIZE);  // Tile dimensions
 
     cudaEventRecord(start);
     histogram_equalization_tiled<<<grid_tiling, block_tiling>>>(d_image, d_cdf, rows, cols, cdf_min, cdf_max);
@@ -215,50 +252,65 @@ void histogram_equalization_cuda(cv::Mat& img) {
     float total_time;
     cudaEventElapsedTime(&total_time, start, stop);
     std::cout << "Total Execution Time: " << total_time << " ms." << std::endl;
+
+    // Save execution times in CSV format
+    std::vector<std::tuple<int, int, int, std::string, double, int, int, int, int>> executionTimes;
+    int ch = 3;
+    if (method == "Grayscale") {
+        ch = 1;
+    }
+    executionTimes.emplace_back(cols, rows, ch, method, total_time, block.x, block.y, TILE_SIZE, TILE_SIZE);
+
+    // Save all execution times to CSV file
+    saveExecutionTimesToCSV(executionTimes);
 }
 
+
+
 int main() {
-    // Mat img = imread("images/img4.bmp", IMREAD_COLOR);
-    Mat img = imread("images/img4.bmp", IMREAD_GRAYSCALE);
-    if (img.empty()) {
+
+    std::vector size = {2048};
+    for (int s : size) {
+        Mat img_color = imread("images/img4.bmp", IMREAD_COLOR);
+        cv::resize(img_color, img_color, cv::Size(s, s));
+    Mat img_gray = imread("images/img4.bmp", IMREAD_GRAYSCALE);
+    cv::resize(img_gray, img_gray, cv::Size(s, s));
+    if (img_gray.empty()) {
         std::cerr << "Error loading image!" << std::endl;
         return -1;
     }
 
-    // Check number of channels and decide on processing
-    if (img.channels() == 1) {
-        std::cout << "Processing single-channel image (grayscale)..." << std::endl;
-        histogram_equalization_cuda(img);
-    } else if (img.channels() == 3) {
-        std::cout << "Processing multi-channel image (RGB), converting to YCbCr..." << std::endl;
+    
+    std::cout << "Processing single-channel image (grayscale)..." << std::endl;
+    histogram_equalization_cuda(img_gray, "Grayscale");
 
-        // Convert RGB to YCbCr
-        cv::Mat ycbcr_img;
-        cv::cvtColor(img, ycbcr_img, cv::COLOR_BGR2YCrCb);
+    std::cout << "Processing multi-channel image (RGB), converting to YCbCr..." << std::endl;
+    cv::Mat ycbcr_img;
+    cv::cvtColor(img_color, ycbcr_img, cv::COLOR_BGR2YCrCb);
 
-        // Split the YCbCr image into Y, Cb, and Cr channels
-        std::vector<cv::Mat> channels(3);
-        cv::split(ycbcr_img, channels);
+    // Split the YCbCr image into Y, Cb, and Cr channels
+    std::vector<cv::Mat> channels(3);
+    cv::split(ycbcr_img, channels);
 
-        // Extract the Y channel
-        cv::Mat& y_channel = channels[0];
+    // Extract the Y channel
+    cv::Mat& y_channel = channels[0];
 
-        // Use the old histogram equalization function for the Y channel
-        histogram_equalization_cuda(y_channel);
+     // Use the old histogram equalization function for the Y channel
+    histogram_equalization_cuda(y_channel, "YCbCr");
 
-        // Merge the Y, Cb, and Cr channels back
-        cv::merge(channels, ycbcr_img);
+    // Merge the Y, Cb, and Cr channels back
+    cv::merge(channels, ycbcr_img);
 
-        // Convert YCbCr back to RGB
-        cv::cvtColor(ycbcr_img, img, cv::COLOR_YCrCb2BGR);
-    } else {
-        std::cout << "Unsupported number of channels: " << img.channels() << std::endl;
-        return -1;
-    }
+    // Convert YCbCr back to RGB
+    cv::cvtColor(ycbcr_img, img_color, cv::COLOR_YCrCb2BGR);
+   
 
-    imwrite("outputs/equalized.jpg", img);
-    imshow("Equalized Image", img);
+    imwrite("outputs/equalized.jpg", img_color);
+    imshow("Equalized color Image", img_color);
+    imshow("Equalized grayscale Image", img_gray);
     waitKey(0);
+    }
+    
 
     return 0;
 }
